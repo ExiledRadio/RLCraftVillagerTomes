@@ -1,0 +1,108 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            name = "forge"
+            url = "https://maven.minecraftforge.net/"
+        }
+        maven {
+            name = "github"
+            url = "https://github.com/juanmuscaria/maven/raw/master"
+        }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle2:[2.3-1.0.0-SNAPSHOT,)'
+    }
+}
+
+apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
+apply plugin: 'net.minecraftforge.gradle.forge'
+
+version = mod_version
+group = mod_group
+archivesBaseName = mod_archives_name
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+
+minecraft {
+	// Single-sourced from gradle.properties — see the ceiling note on forge_version there.
+	version = "${mc_version}-${forge_version}"
+    mappings = "stable_39"
+	runDir = "eclipse"
+
+	replace '@VERSION@', project.version
+	replaceIn 'RLCraftVillagerTomes.java'
+}
+
+processResources {
+
+	// Gradle does not treat `expand` values as task inputs, so without declaring them
+	// here the task stays UP-TO-DATE across a version bump and the jar ships an
+	// mcmod.info still claiming the previous version. Declaring them makes a changed
+	// property invalidate the task the way a changed file would.
+	inputs.property 'version', project.version
+	inputs.property 'mod_id', mod_id
+	inputs.property 'mod_name', mod_name
+	inputs.property 'mod_author', mod_author
+	inputs.property 'mod_description', mod_description
+	inputs.property 'mod_credits', mod_credits
+	inputs.property 'mod_url', mod_url
+	inputs.property 'mc_version', mc_version
+	inputs.property 'mod_version', mod_version
+
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand 'version': project.version,
+		'mod_id': mod_id,
+		'mod_name': mod_name,
+		'mod_author': mod_author,
+		'mod_description': mod_description,
+		'mod_credits': mod_credits,
+		'mod_url': mod_url,
+		'mc_version': mc_version,
+		'mod_version': mod_version
+    }
+
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+// No third-party dependencies. Everything this mod touches - villagers, merchant
+// recipes, the enchantment registry - is vanilla, reached through Forge. That is
+// deliberate: the mod is built for RLCraft but works on any 1.12.2 Forge instance,
+// and enchantments added by other mods are picked up from the registry at runtime
+// rather than being compiled against.
+
+task devJar(type: Jar) {
+	classifier = 'dev'
+	from sourceSets.main.output
+}
+
+task sourcesJar(type: Jar) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+
+artifacts {
+	archives devJar
+	archives sourcesJar
+}
+
+// Dev convenience: copies the built jar straight into a local test instance so
+// testing changes doesn't require a manual copy step. Opt-in and machine-local
+// — set `deployDir` in your user gradle.properties (~/.gradle/gradle.properties),
+// not here, so the build still works for anyone else who clones the repo.
+def deployDir = project.findProperty('deployDir')
+
+task deployToInstance(type: Copy) {
+	onlyIf { deployDir && file(deployDir).isDirectory() }
+	from jar.archivePath
+	into deployDir ?: "$buildDir/deploy"
+	rename { "RLCraftVillagerTomes-${project.version}.jar" }
+}
+
+deployToInstance.dependsOn reobfJar
+build.finalizedBy deployToInstance

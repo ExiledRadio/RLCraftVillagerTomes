@@ -1,0 +1,167 @@
+package com.exiledradio.rlcraftvillagertomes.capability;
+
+import com.exiledradio.rlcraftvillagertomes.RLCraftVillagerTomes;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.CapabilityInject;
+import net.minecraftforge.common.capabilities.CapabilityManager;
+import net.minecraftforge.common.capabilities.ICapabilitySerializable;
+import net.minecraftforge.event.AttachCapabilitiesEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+
+import java.util.Map;
+import java.util.concurrent.Callable;
+
+/**
+ * Registers the tome capability and bolts one onto every villager that spawns or loads.
+ *
+ * <p>A capability rather than a bare NBT tag on the entity because Forge saves and loads
+ * capability data with the entity for free, including across chunk unloads and world
+ * saves, and because writing directly into another entity's {@code ForgeData} compound is
+ * a good way to collide with whatever else in the pack had the same idea.
+ */
+@Mod.EventBusSubscriber(modid = RLCraftVillagerTomes.MODID)
+public final class CapabilityTomeKnowledge {
+
+    /**
+     * Filled in by Forge once {@link #register()} has run. Null before that, and null
+     * forever if registration somehow failed - every read goes through
+     * {@link #get(Entity)}, which treats null as "no tomes" rather than crashing.
+     */
+    @CapabilityInject(ITomeKnowledge.class)
+    public static Capability<ITomeKnowledge> TOMES = null;
+
+    /** The key the capability data is filed under in the villager's saved NBT. */
+    private static final ResourceLocation KEY =
+            new ResourceLocation(RLCraftVillagerTomes.MODID, "tomes");
+
+    /** NBT tag names. Short, because they are written once per villager per save. */
+    private static final String TAG_LIST = "Tomes";
+    private static final String TAG_ID = "id";
+    private static final String TAG_LEVEL = "lvl";
+
+    private CapabilityTomeKnowledge() {
+    }
+
+    public static void register() {
+        CapabilityManager.INSTANCE.register(ITomeKnowledge.class, new Storage(),
+                new Callable<ITomeKnowledge>() {
+                    @Override
+                    public ITomeKnowledge call() {
+                        return new TomeKnowledge();
+                    }
+                });
+    }
+
+    /**
+     * The tome data for an entity, or null when there is none.
+     *
+     * <p>Null is the normal answer for anything that is not a villager, so callers check
+     * it rather than assuming. It is also the answer during the brief window before
+     * capability registration completes, which is why nothing here throws.
+     */
+    public static ITomeKnowledge get(Entity entity) {
+        if (TOMES == null || entity == null || !entity.hasCapability(TOMES, null)) {
+            return null;
+        }
+        return entity.getCapability(TOMES, null);
+    }
+
+    @SubscribeEvent
+    public static void onAttachCapabilities(AttachCapabilitiesEvent<Entity> event) {
+        // Only real villagers. Zombie villagers are a different entity class entirely, so
+        // curing one produces a fresh EntityVillager with no tomes - the knowledge does
+        // not survive the round trip, and that is documented rather than worked around.
+        if (event.getObject() instanceof EntityVillager) {
+            event.addCapability(KEY, new Provider());
+        }
+    }
+
+    /**
+     * Reads and writes the tome map as a list rather than a compound of key/value pairs.
+     *
+     * <p>A list keeps the learning order, which is the order the trades appear in. A
+     * compound would not: NBT compounds are unordered on disk and come back in hash order,
+     * so a villager's trade list would quietly reshuffle itself every time the world
+     * reloaded.
+     */
+    public static class Storage implements Capability.IStorage<ITomeKnowledge> {
+
+        @Override
+        public NBTBase writeNBT(Capability<ITomeKnowledge> capability, ITomeKnowledge instance,
+                                EnumFacing side) {
+            NBTTagList list = new NBTTagList();
+            for (Map.Entry<ResourceLocation, Integer> entry : instance.view().entrySet()) {
+                NBTTagCompound tome = new NBTTagCompound();
+                tome.setString(TAG_ID, entry.getKey().toString());
+                tome.setInteger(TAG_LEVEL, entry.getValue().intValue());
+                list.appendTag(tome);
+            }
+            NBTTagCompound root = new NBTTagCompound();
+            root.setTag(TAG_LIST, list);
+            return root;
+        }
+
+        @Override
+        public void readNBT(Capability<ITomeKnowledge> capability, ITomeKnowledge instance,
+                            EnumFacing side, NBTBase nbt) {
+            instance.clear();
+            if (!(nbt instanceof NBTTagCompound)) {
+                return;
+            }
+            NBTTagList list = ((NBTTagCompound) nbt).getTagList(TAG_LIST, 10);
+            for (int i = 0; i < list.tagCount(); i++) {
+                NBTTagCompound tome = list.getCompoundTagAt(i);
+                String id = tome.getString(TAG_ID);
+                int level = tome.getInteger(TAG_LEVEL);
+                // A blank id means the entry was corrupted or hand-edited. Skipping it
+                // loses one trade; letting a null ResourceLocation through would take the
+                // whole entity load down with it.
+                if (id != null && !id.isEmpty() && level >= 1) {
+                    instance.setLevel(new ResourceLocation(id), level);
+                }
+            }
+        }
+    }
+
+    /**
+     * Holds one villager's tome data and hands it out on request.
+     *
+     * <p>The instance is created eagerly rather than lazily: a villager that has learned
+     * nothing still needs somewhere to put the first book, and an empty
+     * {@link TomeKnowledge} is a map with nothing in it - cheaper than the null check it
+     * would take to avoid.
+     */
+    public static class Provider implements ICapabilitySerializable<NBTBase> {
+
+        private final ITomeKnowledge instance = new TomeKnowledge();
+
+        @Override
+        public boolean hasCapability(Capability<?> capability, EnumFacing facing) {
+            return capability == TOMES;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T getCapability(Capability<T> capability, EnumFacing facing) {
+            return capability == TOMES ? (T) instance : null;
+        }
+
+        @Override
+        public NBTBase serializeNBT() {
+            return TOMES.getStorage().writeNBT(TOMES, instance, null);
+        }
+
+        @Override
+        public void deserializeNBT(NBTBase nbt) {
+            TOMES.getStorage().readNBT(TOMES, instance, null, nbt);
+        }
+    }
+}
