@@ -1,0 +1,1 @@
+Turn the enchanted books you find into permanent villager trades. Hand a villager a book and it learns that enchantment, priced in emeralds. Give it a matching book later and the trade levels up by anvil rules. Works with modded enchantments.
