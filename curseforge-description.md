@@ -1,14 +1,19 @@
 <!--
-IMAGE PLACEHOLDERS: CurseForge rehosts images on media.forgecdn.net. Upload each file
-from images/ to the project's Images tab first, then replace the PASTE-URL markers below
-with the forgecdn URL it gives you. Do not link to GitHub raw URLs - CurseForge strips
-external image hosts on some themes.
+Two images only, both gameplay. The config screenshots are deliberately not in here -
+a wall of settings tables breaks the read and nobody decides to install a mod because
+they saw its config screen. They are still uploaded to the project's Images tab, where
+people who want them will look.
 
-Files referenced, in order of appearance:
-  images/VillagerTomesLearnedMessage.png
-  images/VillageTomesUpgradeMessage.png
-  images/VillageTomesLearningConfig.png
-  images/VillageTomesPricingConfig.png
+USED:
+  learned message   https://media.forgecdn.net/attachments/1852/310/villagertomeslearnedmessage-png.png
+  upgrade message   https://media.forgecdn.net/attachments/1852/314/villagetomesupgrademessage-png.png
+
+UPLOADED BUT UNUSED, kept here so the URLs are not lost:
+  config category      https://media.forgecdn.net/attachments/1852/311/villagetomesconfigcategory-png.png
+  feedback category    https://media.forgecdn.net/attachments/1852/309/villagertomesfeedbackcategory-png.png
+  learning config      https://media.forgecdn.net/attachments/1852/312/villagetomeslearningconfig-png.png
+  pricing config       https://media.forgecdn.net/attachments/1852/313/villagetomespricingconfig-png.png
+  upgrading category   https://media.forgecdn.net/attachments/1852/315/villagetomesupgradingcategory-png.png
 -->
 
 # RLCraft Villager Tomes
@@ -31,7 +36,7 @@ Works out of the box. No config editing, no dependencies.
 
 **Any villager will do.** Farmers, butchers, nitwits, all of them. Hunting down a librarian first is exactly the grind this is meant to remove, though you can restrict it by profession if you want the classic feel.
 
-![A villager learning a book](PASTE-URL-VillagerTomesLearnedMessage)
+![A villager learning a book](https://media.forgecdn.net/attachments/1852/310/villagertomeslearnedmessage-png.png)
 
 ---
 
@@ -58,7 +63,7 @@ That makes sneaking a gesture that would otherwise do nothing, which is exactly 
 
 **A refused book is never consumed.** It goes straight back in your hand with a message saying why.
 
-![Upgrading a trade](PASTE-URL-VillageTomesUpgradeMessage)
+![Upgrading a trade](https://media.forgecdn.net/attachments/1852/314/villagetomesupgrademessage-png.png)
 
 ---
 
@@ -85,8 +90,6 @@ The book takes the first input slot and the emeralds the second, matching vanill
 The full formula is `(base + perLevel × level) × rarity × treasure`, and every term is a setting. Separate multipliers for common, uncommon, rare and very rare, plus an extra one for treasure enchantments — set `TREASURE_COST_MULTIPLIER` to 3 and Mending costs 30 instead of 10 while everything else stays put.
 
 One ceiling worth knowing: a trade can only ask for a single stack, so 64 emeralds is a hard maximum. At ten per level everything from level VII up costs the same. That never comes up with vanilla enchantments, which stop at V, but packs that push past that will see high levels flatten out.
-
-![Pricing settings](PASTE-URL-VillageTomesPricingConfig)
 
 ---
 
@@ -121,7 +124,7 @@ A villager only restocks as a *side effect of being traded with* — `EntityVill
 - **pricing** — the whole formula, the extra input item, trade stock, experience, and the never-lock switches.
 - **feedback** — chat messages, villager sounds, particles, and a debug logging toggle.
 
-![Learning settings](PASTE-URL-VillageTomesLearningConfig)
+Screenshots of every category are on the Images tab.
 
 ---
 

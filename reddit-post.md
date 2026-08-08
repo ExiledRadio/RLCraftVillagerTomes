@@ -90,7 +90,9 @@ Trades this mod adds never lock, by default. There's also a switch that extends 
 **Format:** bold `While I was in there I also fixed something that's bugged me about 1.12
 villagers forever.`
 
-**Then insert:** `images/VillageTomesPricingConfig.png`
+**No image here.** Two gameplay screenshots is the right number for a post this length,
+and the only thing left to show is a config screen. Nobody upvotes a settings table, and
+a weak third image drags down the two good ones by association.
 
 ---
 
@@ -136,9 +138,8 @@ learned`.
 
 - [ ] **Smoke test the upgrade path on a fresh game launch** — see the note below, this is
       the one thing not yet confirmed end to end
-- [ ] CurseForge page loads in a private/incognito window
-- [ ] All four images uploaded to CurseForge and the PASTE-URL markers in
-      `curseforge-description.md` replaced with forgecdn URLs
+- [ ] CurseForge page loads in a private/incognito window, and both inline images in the
+      description actually render — forgecdn URLs are already pasted in
 - [ ] CurseForge URL pasted into Block 4 above
 - [ ] Flair the post, checking what similar mod posts on the sub use
 - [ ] Post when the sub is active, generally US evening
