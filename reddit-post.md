@@ -1,132 +1,98 @@
-# r/RLCraft launch post — Rich Text Editor version
+# r/RLCraft launch post
+
+Short on purpose. The mod explains itself in one sentence, so the post's only job is to
+get that sentence in front of someone and then get out of the way.
 
 ## Title
 
 **Recommended:**
 
-> I got tired of my fourth duplicate Unbreaking I being anvil fodder, so I made a mod where you hand your enchanted books to a villager and it sells them back to you forever
+> Found a good book and don't want to reroll villagers? Made a mod where you shift right-click one and it sells that enchantment permanently
 
-Alternatives, same hook:
+Alternatives:
 
-> Made a mod where villagers learn the enchanted books you give them and sell them as permanent trades - two of the same level upgrade it, anvil style
+> Shift right-click a villager with an enchanted book and it'll sell that enchantment forever - upgrades anvil-style if you give it a second one
 
-> Every enchanted book you find is a one-time use. I made a mod that turns them into villager trades instead
+> Every enchanted book you find is a one-time use, so I made a mod that turns them into permanent villager trades
 
-**On naming Mending in the title:** tempting, because Mending is the emotional core of the
-pitch and everyone knows the feeling. But it narrows the mod to one enchantment in the
-reader's head before they open the post, and the thing that actually sells it is that
-*every* book qualifies, SoManyEnchantments included. Keep Mending for Block 2 where it
-lands harder with context.
+The recommended one is your opening line, which is the right instinct - it leads with the
+reader's problem instead of with me. The second is better if the sub has seen a lot of
+question-titles lately; it front-loads the mechanic instead.
 
-**Avoid** "no more enchant grind" style titles - they read as a complaint about the pack
-rather than a thing you built, and this sub has affection for the grind.
-
----
-
-## Using the Rich Text Editor
-
-**The editor does not interpret pasted markdown.** Paste `**bold**` and you get literal
-asterisks on the page. So every block below is plain text with nothing to strip out, and
-the formatting is applied afterwards.
-
-- **Images go where the cursor is.** Put the cursor where the image belongs and use the
-  image button.
-- **Typing markdown still works, pasting it does not.** Typing `- ` at the start of an
-  empty line turns it into a bullet list. Only pasted markup comes through dead.
-
-**Formatting, once the text is in:**
-
-- Bold: select the phrase, `Ctrl+B`
-- Bullet list: click the list button, or type `- ` on an empty line first
-- Links: select the words, `Ctrl+K`, paste the URL
+**Don't** put Mending in the title. It's the strongest single hook but it narrows the mod
+to one enchantment before anyone opens the post, and the actual selling point is that
+every book qualifies.
 
 ---
 
-## Block 1
+## Body
+
+Paste each block, then apply the formatting noted under it. The rich text editor does not
+interpret pasted markdown - `**bold**` comes through as literal asterisks - so select the
+phrase and hit `Ctrl+B` instead. Images go wherever the cursor is.
+
+### Block 1
 
 ```
-Somewhere around hour forty of every RLCraft run I end up with a chest full of enchanted books I'm never going to use. Three Unbreaking I. Two Efficiency II. A Feather Falling I that I found before I had boots. They're not worth the anvil levels to combine and they're not worth throwing away, so they just sit there.
+Found a good book out in the world? Don't want to reroll villagers constantly?
 
-So I made a mod where you give them to a villager instead.
-
-Hold an enchanted book, sneak-right-click any villager, and it eats the book and starts selling that enchantment. Permanently. Ten emeralds a level, plus a book, exactly like a librarian's normal trade.
+Shift right-click a villager while holding an enchanted book. It eats the book and sells that enchantment permanently, for ten emeralds a level plus a book - the same shape as a normal librarian trade.
 ```
 
-**Format:** bold `So I made a mod where you give them to a villager instead.` — nothing else.
+**Format:** bold `Shift right-click a villager while holding an enchanted book.`
 
 **Then insert:** `images/VillagerTomesLearnedMessage.png`
 
----
-
-## Block 2
+### Block 2
 
 ```
-The part that made it click for me was the upgrading. It's anvil rules, so a villager already selling Unbreaking II, handed another Unbreaking II, starts selling Unbreaking III. Suddenly the duplicates aren't junk - they're progress toward a trade you'll be buying from for the rest of the run.
+Give it a second copy of the same level and the trade upgrades, anvil style - two Unbreaking II gets you Unbreaking III. Hand it something lower than it already sells and it gives the book straight back instead of wasting it.
 
-Give it a book lower than what it already sells and it hands it straight back to you rather than eating it. Give it a higher one and it just takes the higher level.
-
-And it works with Mending. That's the one I actually built this for. You find one Mending book in a lich tower, you put it on one tool, and that's your relationship with Mending for the next fifty hours. Now the villager sells it, and you can decide whether the next thirty emeralds are worth putting it on your pickaxe.
-
-The enchantments are read straight out of the registry rather than hard-coded, so the whole SoManyEnchantments set works too - Spellproof, Adept, Freezing, Inner Berserk, all of them behave exactly like vanilla ones here.
+Five enchantments per villager, so you end up with a shelf of specialists rather than one god villager. Upgrading doesn't use a slot, so a full villager can still be improved.
 ```
 
-**Format:** bold `The part that made it click for me was the upgrading.` and `And it works with
-Mending.`
+**Format:** bold `anvil style`
 
 **Then insert:** `images/VillageTomesUpgradeMessage.png`
 
----
-
-## Block 3
+### Block 3 — last one
 
 ```
-Five enchantments per villager by default, so you end up with a shelf of specialists rather than one god villager. Upgrading an existing trade doesn't use a slot, so a full villager can still be improved.
+Two things worth knowing:
 
-While I was in there I also fixed something that's bugged me about 1.12 villagers forever. A villager only restocks as a side effect of being traded with - that's the only thing in the whole game that schedules a refresh. So if you exhaust every trade on a villager, there's nothing left to click, nothing schedules the restock, and that villager is bricked permanently. 1.14 fixed this with workstations. 1.12 never did.
+It reads enchantments straight out of the registry, so the whole SoManyEnchantments set works - Spellproof, Adept, Freezing, Inner Berserk, all of it. Nothing is hard-coded.
 
-Trades this mod adds never lock, by default. There's also a switch that extends that to every trade on every villager you click, vanilla ones included, if you want the flaw gone entirely - it's off by default because it does turn one wheat farmer into an infinite emerald tap.
-```
+Trades it adds never lock. In 1.12 a villager only restocks as a side effect of being traded with, so if you exhaust every trade it's bricked permanently. That doesn't happen to these, and there's a switch to extend it to every villager trade if you want the flaw gone entirely.
 
-**Format:** bold `While I was in there I also fixed something that's bugged me about 1.12
-villagers forever.`
-
-**No image here.** Two gameplay screenshots is the right number for a post this length,
-and the only thing left to show is a config screen. Nobody upvotes a settings table, and
-a weak third image drags down the two good ones by association.
-
----
-
-## Block 4 — last one
-
-```
-36 settings across four categories if you want to tune it - the price formula has separate multipliers per rarity tier plus one for treasure enchantments, so you can leave Mending buyable but make it genuinely expensive. You can restrict it to librarians only, whitelist or blacklist specific enchantments, or cap what level villagers will ever sell.
-
-No dependencies, and it's server-side - clients don't need it installed.
+The RLCraft villager grind can be tedious. I addressed some of that with my Enchantment Recipes mod - some people might prefer this method, or run both.
 
 CurseForge: PASTE-CURSEFORGE-URL-HERE
 
 Source (MIT): https://github.com/ExiledRadio/RLCraftVillagerTomes
 
-Ten emeralds per level is a number I picked from my own playthrough and nothing else. If that's too cheap, or the five-book cap is in the wrong place, tell me - those are the two I'd most like other opinions on before I call the defaults settled.
+Ten emeralds a level and five books per villager are numbers I picked from my own playthrough and nothing else. If either is in the wrong place, say so - those are the two I'd most like other opinions on.
 ```
 
-**Format:** bold `CurseForge:` and `Source (MIT):`. The editor turns both URLs into links on
-its own once you paste them.
+**Format:** bold `It reads enchantments straight out of the registry` and `Trades it add
+never lock.` Link the words `Enchantment Recipes mod` to its CurseForge page. The editor
+turns the two bare URLs into links on its own.
 
 ---
 
 ## First comment — post immediately after the post goes live
 
 ```
-Couple of things worth saying up front:
+A few things that didn't fit above:
 
-This is unofficial. Not affiliated with Shivaxi or the Dregora team. Just a player-made addon.
+This is unofficial. Not affiliated with Shivaxi or the Dregora team.
 
-Curing a zombie villager won't preserve what it learned - a zombie villager is a different entity under the hood, so the cured one comes back with nothing. Protect the good ones.
+Curing a zombie villager won't preserve what it learned - a zombie villager is a different entity under the hood, so the cured one comes back blank. Protect the good ones.
 
-Sneak-right-click is the trigger rather than plain right-click for a reason: 1.12 refuses to open a villager's trade screen while you're sneaking at all, so it's a click that otherwise does nothing. That leaves the normal right-click free for trading even while you're holding a book. There's a config option to swap them if you'd rather.
+Sneaking is the trigger rather than a plain right-click because 1.12 refuses to open a villager's trade screen while you're sneaking at all. It's a click that otherwise does nothing, which leaves the normal right-click free for trading even while you're holding a book. Config option to swap them if you'd rather.
 
-If a villager already had a natural trade for an enchantment you then teach it, you get one trade instead of two at different prices - the taught one absorbs it.
+36 settings if you want to tune it - price formula with per-rarity multipliers, enchantment whitelist and blacklist, level caps, restrict it to librarians only. Treasure enchantments and curses are both allowed by default.
+
+No dependencies, and it's server-side - clients don't need it installed.
 ```
 
 **Format:** bold `This is unofficial.` and `Curing a zombie villager won't preserve what it
@@ -136,24 +102,28 @@ learned`.
 
 ## Before posting
 
-- [ ] **Smoke test the upgrade path on a fresh game launch** — see the note below, this is
-      the one thing not yet confirmed end to end
-- [ ] CurseForge page loads in a private/incognito window, and both inline images in the
-      description actually render — forgecdn URLs are already pasted in
-- [ ] CurseForge URL pasted into Block 4 above
+- [ ] **Smoke test the upgrade path on a fresh game launch** — see below, the one thing not
+      yet confirmed end to end
+- [ ] CurseForge page loads in a private/incognito window, both inline images render
+- [ ] CurseForge URL pasted into Block 3
+- [ ] Enchantment Recipes CurseForge page linked in Block 3
 - [ ] Flair the post, checking what similar mod posts on the sub use
 - [ ] Post when the sub is active, generally US evening
-- [ ] Stay around for the first couple of hours - early replies drive visibility
-- [ ] Consider r/feedthebeast as a second post on a different day, not the same evening.
-      Reword the opening if you do; a straight copy-paste across subs reads as spam
+- [ ] Stay around for the first couple of hours — early replies drive visibility
+- [ ] Consider r/feedthebeast on a different day, not the same evening. Reword the opening;
+      a straight copy-paste across subs reads as spam
 
 ## Known-unverified before launch
 
-The teach path and the trade appearing are both confirmed working in game. The upgrade
-*message* is confirmed too. What has never been observed end to end is an upgraded trade
-actually showing the higher level in the trade list — the one time an upgrade ran, the
-trade-list reflection was still broken, and the retry after the fix hit a
-`NoClassDefFoundError` caused by the jar being replaced mid-session.
+The teach path and the trade appearing are both confirmed in game, and so is the upgrade
+*message*. What has never been observed end to end is an upgraded trade actually showing
+the higher level in the list — the one time an upgrade ran, the trade-list reflection was
+still broken, and the retry after the fix hit a `NoClassDefFoundError` from the jar being
+replaced mid-session.
 
-Two minutes on a fresh launch settles it: teach a book, teach the same book again, open the
-villager and check the trade reads one level higher.
+Note that `VillageTomesUpgradeMessage.png`, used in Block 2, was captured during that
+broken session. The message in it is real; the trade behind it was not written. Worth
+re-taking the screenshot after the smoke test so the image matches what actually happens.
+
+Two minutes settles both: teach a book, teach the same book again, open the villager, check
+the trade reads one level higher.
