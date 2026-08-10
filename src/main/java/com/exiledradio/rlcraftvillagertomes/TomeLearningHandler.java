@@ -157,7 +157,13 @@ public final class TomeLearningHandler {
             return "Baby villagers are too young to learn. Come back when it has grown up.";
         }
         if (!ModConfig.isProfessionAllowed(professionName(villager))) {
-            return "This villager's profession does not deal in books.";
+            // Naming who does take books matters more than it used to: librarians only is
+            // now the default, so this is the message most players meet first, and "no"
+            // without "try one of these" is a dead end.
+            String allowed = ModConfig.getAllowedProfessionsLabel();
+            return allowed == null
+                    ? "This villager will not take books."
+                    : "Only " + allowed + " will take books.";
         }
         return null;
     }

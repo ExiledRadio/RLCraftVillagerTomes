@@ -2,9 +2,9 @@
 
 **Minecraft 1.12.2 · Forge · no dependencies**
 
-Teach villagers the enchanted books you find.
+Teach librarians the enchanted books you find.
 
-Hold an enchanted book, sneak-right-click a villager, and it eats the book and starts selling
+Hold an enchanted book, sneak-right-click a librarian, and it eats the book and starts selling
 that enchantment for emeralds — permanently. Hand the same villager a matching book later and
 the trade levels up by anvil rules.
 
@@ -17,7 +17,7 @@ registry at runtime, so anything any other mod adds works without this mod knowi
 
 | | |
 |---|---|
-| **Teach** | Sneak-right-click a villager while holding an enchanted book. The book is consumed and becomes a trade. |
+| **Teach** | Sneak-right-click a librarian while holding an enchanted book. The book is consumed and becomes a trade. `ALLOWED_PROFESSIONS` opens it up to other professions. |
 | **Upgrade** | Give a villager that already sells Unbreaking II another Unbreaking II, and the trade becomes Unbreaking III. |
 | **Price** | Ten emeralds per level by default — Mending I costs 10, Unbreaking III costs 30, Sharpness V costs 50 — plus a plain book, in the same slot order vanilla librarians use. |
 | **Cap** | Five enchantments per villager by default, so no single villager becomes the whole enchanting system. |

@@ -34,7 +34,7 @@ Works out of the box. No config editing, no dependencies.
 
 **Hand over a matching book later and the trade levels up.** Anvil rules — a villager selling Unbreaking II, given another Unbreaking II, starts selling Unbreaking III.
 
-**Any villager will do.** Farmers, butchers, nitwits, all of them. Hunting down a librarian first is exactly the grind this is meant to remove, though you can restrict it by profession if you want the classic feel.
+**Librarians only**, by default. Books are a librarian's business, and the grind this removes is rerolling one over and over for the enchantment you want — not finding a librarian in the first place. `ALLOWED_PROFESSIONS` opens it up to any profession, or all of them, if you disagree.
 
 ![A villager learning a book](https://media.forgecdn.net/attachments/1852/310/villagertomeslearnedmessage-png.png)
 

@@ -36,10 +36,10 @@ phrase and hit `Ctrl+B` instead. Images go wherever the cursor is.
 ```
 Found a good book out in the world? Don't want to reroll villagers constantly?
 
-Shift right-click a villager while holding an enchanted book. It eats the book and sells that enchantment permanently, for ten emeralds a level plus a book - the same shape as a normal librarian trade.
+Shift right-click a librarian while holding an enchanted book. It eats the book and sells that enchantment permanently, for ten emeralds a level plus a book - the same shape as a normal librarian trade.
 ```
 
-**Format:** bold `Shift right-click a villager while holding an enchanted book.`
+**Format:** bold `Shift right-click a librarian while holding an enchanted book.`
 
 **Then insert:** `images/VillagerTomesLearnedMessage.png`
 
@@ -90,7 +90,7 @@ Curing a zombie villager won't preserve what it learned - a zombie villager is a
 
 Sneaking is the trigger rather than a plain right-click because 1.12 refuses to open a villager's trade screen while you're sneaking at all. It's a click that otherwise does nothing, which leaves the normal right-click free for trading even while you're holding a book. Config option to swap them if you'd rather.
 
-36 settings if you want to tune it - price formula with per-rarity multipliers, enchantment whitelist and blacklist, level caps, restrict it to librarians only. Treasure enchantments and curses are both allowed by default.
+Librarians only by default, though there's a setting to let any profession take books if you'd rather. 36 settings in total - price formula with per-rarity multipliers, enchantment whitelist and blacklist, level caps. Treasure enchantments and curses are both allowed.
 
 No dependencies, and it's server-side - clients don't need it installed.
 ```

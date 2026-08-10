@@ -102,7 +102,7 @@ public class ModConfig {
     public static boolean ENABLE_LEARNING = true;
     public static String TEACH_TRIGGER = TRIGGER_SNEAK_RIGHT_CLICK;
     public static int MAX_TOMES_PER_VILLAGER = 5;
-    public static String[] ALLOWED_PROFESSIONS = new String[0];
+    public static String[] ALLOWED_PROFESSIONS = {"minecraft:librarian"};
     public static boolean TEACH_BABY_VILLAGERS = false;
     public static boolean ALLOW_MULTI_ENCHANT_BOOKS = true;
     public static String[] ENCHANTMENT_WHITELIST = new String[0];
@@ -157,6 +157,9 @@ public class ModConfig {
 
     /** Resolved once per load from {@link #EXTRA_INPUT_ITEM}; empty means "emeralds only". */
     private static ItemStack extraInput = ItemStack.EMPTY;
+
+    /** Player-readable form of {@link #ALLOWED_PROFESSIONS}; null when every profession qualifies. */
+    private static String allowedProfessionsLabel;
 
     public static void init(File configFile) {
         if (config == null) {
@@ -310,18 +313,26 @@ public class ModConfig {
         );
 
         ALLOWED_PROFESSIONS = config.getStringList(
-                "ALLOWED_PROFESSIONS", CATEGORY_LEARNING, new String[0],
+                "ALLOWED_PROFESSIONS", CATEGORY_LEARNING, new String[]{"minecraft:librarian"},
                 "Which villager professions will accept books - one registry name per line.\n"
-                        + "Empty (default) means every profession will, which is the intent: hunting\n"
-                        + "down a librarian first is exactly the grind this mod exists to remove.\n"
                         + "\n"
-                        + "Vanilla names are minecraft:farmer, minecraft:librarian, minecraft:priest,\n"
-                        + "minecraft:smith, minecraft:butcher and minecraft:nitwit. Modded professions\n"
-                        + "use their own. Matching is case-insensitive, and a bare name with no colon\n"
-                        + "is assumed to be minecraft:.\n"
+                        + "Librarians only, by default. Books are a librarian's business, every other\n"
+                        + "profession selling enchantments makes the whole trade tier meaningless, and\n"
+                        + "a butcher offering Mending is the kind of thing that stops feeling like\n"
+                        + "part of the game. The grind this mod removes is rerolling a librarian over\n"
+                        + "and over for the enchantment you want - not finding a librarian at all.\n"
                         + "\n"
-                        + "Set this to just minecraft:librarian if you want the classic feel where\n"
-                        + "books are a librarian's business."
+                        + "Note that minecraft:librarian is the PROFESSION, which covers both the\n"
+                        + "Librarian and Cartographer careers. Cartographers will therefore take books\n"
+                        + "too. There is no way to separate them here: a villager nobody has traded\n"
+                        + "with yet has not picked a career, so filtering on career would refuse\n"
+                        + "librarians you had never spoken to.\n"
+                        + "\n"
+                        + "Empty means EVERY profession accepts books. Vanilla names are\n"
+                        + "minecraft:farmer, minecraft:librarian, minecraft:priest, minecraft:smith,\n"
+                        + "minecraft:butcher and minecraft:nitwit. Modded professions use their own.\n"
+                        + "Matching is case-insensitive, and a bare name with no colon is assumed to\n"
+                        + "be minecraft:."
         );
 
         TEACH_BABY_VILLAGERS = config.getBoolean(
@@ -732,8 +743,60 @@ public class ModConfig {
         allowedProfessions = toLookupSet(ALLOWED_PROFESSIONS);
         enchantmentWhitelist = toLookupSet(ENCHANTMENT_WHITELIST);
         enchantmentBlacklist = toLookupSet(ENCHANTMENT_BLACKLIST);
+        allowedProfessionsLabel = describeProfessions(ALLOWED_PROFESSIONS);
 
         extraInput = resolveExtraInput();
+    }
+
+    /**
+     * Turns the raw profession list into something worth putting in a chat message -
+     * "librarians", or "librarians or priests".
+     *
+     * <p>Built from the raw array rather than the lookup set so the order the player wrote
+     * is preserved; the set is a HashSet and would reorder them.
+     *
+     * <p>Pluralising by adding an "s" is crude and works for every vanilla profession. A
+     * modded profession with an awkward name gets a slightly wrong plural in one chat
+     * message, which is a fair trade for not shipping a dictionary.
+     */
+    private static String describeProfessions(String[] professions) {
+        List<String> names = new ArrayList<String>();
+        for (String profession : professions) {
+            if (profession == null || profession.trim().isEmpty()) {
+                continue;
+            }
+            String name = profession.trim();
+            int colon = name.indexOf(':');
+            if (colon >= 0) {
+                name = name.substring(colon + 1);
+            }
+            name = name.toLowerCase(Locale.ROOT).replace('_', ' ');
+            names.add(name.endsWith("s") ? name : name + "s");
+        }
+        if (names.isEmpty()) {
+            return null;
+        }
+        if (names.size() == 1) {
+            return names.get(0);
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < names.size(); i++) {
+            if (i > 0) {
+                sb.append(i == names.size() - 1 ? " or " : ", ");
+            }
+            sb.append(names.get(i));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Who will accept books, phrased for a player, or null when everybody will.
+     *
+     * <p>Exists because the default now refuses most villagers, so the refusal message has
+     * to say who to go and find instead of only saying no.
+     */
+    public static String getAllowedProfessionsLabel() {
+        return allowedProfessionsLabel;
     }
 
     /**
