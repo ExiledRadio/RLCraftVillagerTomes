@@ -2,6 +2,7 @@ package com.exiledradio.rlcraftvillagertomes;
 
 import com.exiledradio.rlcraftvillagertomes.capability.CapabilityTomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
+import com.exiledradio.rlcraftvillagertomes.capability.Tome;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -22,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * {@code /villagertomes} — inspect and edit what the villager you are looking at knows.
@@ -102,15 +102,15 @@ public class CommandVillagerTomes extends CommandBase {
 
         reply(sender, TextFormatting.AQUA + "Tomes (" + tomes.count() + "/"
                 + ModConfig.MAX_TOMES_PER_VILLAGER + "):");
-        for (Map.Entry<ResourceLocation, Integer> entry : tomes.view().entrySet()) {
-            Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(entry.getKey());
-            int level = entry.getValue().intValue();
+        for (Tome tome : tomes.view()) {
+            Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(tome.getEnchantment());
+            int level = tome.getLevel();
             if (enchantment == null) {
                 // Kept in the data but unsellable until the mod that added it comes back.
-                reply(sender, TextFormatting.DARK_GRAY + "  " + entry.getKey() + " " + level
-                        + " (not loaded)");
+                reply(sender, TextFormatting.DARK_GRAY + "  " + tome.getEnchantment() + " "
+                        + level + " (not loaded)");
             } else {
-                reply(sender, TextFormatting.WHITE + "  " + entry.getKey() + " " + level
+                reply(sender, TextFormatting.WHITE + "  " + tome.getEnchantment() + " " + level
                         + TextFormatting.GRAY + " - "
                         + ModConfig.getEmeraldCost(enchantment, level) + " emerald(s)");
             }
@@ -140,7 +140,10 @@ public class CommandVillagerTomes extends CommandBase {
                     Integer.valueOf(ModConfig.MAX_TOMES_PER_VILLAGER));
         }
 
-        tomes.setLevel(id, level);
+        // Replaces rather than stacking, whatever UPGRADE_TAKES_NEW_SLOT says. An admin
+        // asking for "unbreaking 3" wants that villager selling Unbreaking III, not another
+        // trade added next to whatever was there.
+        tomes.setOnly(id, level);
         reply(sender, TextFormatting.GREEN + "Taught " + id + " " + level + ".");
     }
 

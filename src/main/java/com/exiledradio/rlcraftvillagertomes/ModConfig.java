@@ -56,7 +56,7 @@ public class ModConfig {
             "ALLOW_CURSES", "MAX_LEARNABLE_LEVEL", "ALLOW_OVERLEVELING");
 
     private static final List<String> ORDER_UPGRADING = Arrays.asList(
-            "UPGRADE_MODE", "CONSUME_BOOK_ON_REJECT");
+            "UPGRADE_MODE", "UPGRADE_TAKES_NEW_SLOT", "CONSUME_BOOK_ON_REJECT");
 
     private static final List<String> ORDER_PRICING = Arrays.asList(
             "BASE_EMERALD_COST", "EMERALDS_PER_LEVEL", "MIN_EMERALD_COST", "MAX_EMERALD_COST",
@@ -126,6 +126,7 @@ public class ModConfig {
 
     // upgrading
     public static String UPGRADE_MODE = UPGRADE_HIGHER_ONLY;
+    public static boolean UPGRADE_TAKES_NEW_SLOT = false;
     public static boolean CONSUME_BOOK_ON_REJECT = false;
 
     // pricing
@@ -362,8 +363,10 @@ public class ModConfig {
                         + "armour one, the tool one - and losing one to a zombie actually costs you\n"
                         + "something.\n"
                         + "\n"
-                        + "Counts DISTINCT enchantments, not levels. Upgrading Unbreaking II to III\n"
-                        + "does not use another slot, so a full villager can still be improved.\n"
+                        + "Counts TRADES. With UPGRADE_TAKES_NEW_SLOT off, which is the default, that\n"
+                        + "is the same as counting distinct enchantments - upgrading replaces a trade\n"
+                        + "rather than adding one, so a villager at its cap can still be improved.\n"
+                        + "Turn that setting on and every level is its own trade and its own slot.\n"
                         + "Lowering this later never deletes anything: a villager over the new limit\n"
                         + "keeps and sells everything it already knows, it just cannot learn more."
         );
@@ -533,6 +536,26 @@ public class ModConfig {
                         + "expressed these same four behaviours but gave no clue which combination\n"
                         + "produced which. An existing config is carried over automatically.",
                 UPGRADE_MODE_VALUES
+        );
+
+        UPGRADE_TAKES_NEW_SLOT = config.getBoolean(
+                "UPGRADE_TAKES_NEW_SLOT", CATEGORY_UPGRADING, false,
+                "If true, levelling a trade up keeps the old one instead of replacing it, and\n"
+                        + "costs another slot.\n"
+                        + "\n"
+                        + "A villager that has been pushed from Unbreaking II to III ends up selling\n"
+                        + "BOTH - two trades, two of its MAX_TOMES_PER_VILLAGER slots gone. It is the\n"
+                        + "difference between a slot meaning 'an enchantment this villager deals in'\n"
+                        + "and a slot meaning 'one trade on the board'.\n"
+                        + "\n"
+                        + "OFF by default, which keeps upgrading free: the old trade is replaced and\n"
+                        + "a villager at its cap can still be improved.\n"
+                        + "\n"
+                        + "Turn it on to make levelling genuinely expensive. With five slots you can\n"
+                        + "have five enchantments at level I, or one at level V and nothing else, and\n"
+                        + "that trade-off is the point. Be aware it fills villagers fast, and that a\n"
+                        + "villager with no free slot cannot be levelled up at all - it will say so\n"
+                        + "rather than quietly replacing something."
         );
 
         CONSUME_BOOK_ON_REJECT = config.getBoolean(

@@ -213,10 +213,10 @@ public final class TomeLearningHandler {
             // A book above the ceiling is not refused, just trimmed - somebody who found an
             // over-levelled book should still get the best the config allows out of it.
             int bookLevel = Math.min(entry.getValue().intValue(), cap);
-            int known = tomes.getLevel(id);
+            int known = tomes.getHighestLevel(id);
 
             if (known == 0) {
-                plan.changes.put(id, Integer.valueOf(bookLevel));
+                plan.changes.add(new Change(id, bookLevel, true));
                 plan.learned.put(enchantment, Integer.valueOf(bookLevel));
                 slotsNeeded++;
                 continue;
@@ -229,8 +229,12 @@ public final class TomeLearningHandler {
                             + ", not a higher one.";
                     return plan;
                 }
-                plan.changes.put(id, Integer.valueOf(bookLevel));
-                plan.upgraded.add(new Upgrade(enchantment, known, bookLevel));
+                plan.changes.add(new Change(id, bookLevel, ModConfig.UPGRADE_TAKES_NEW_SLOT));
+                plan.upgraded.add(new Upgrade(enchantment, known, bookLevel,
+                        ModConfig.UPGRADE_TAKES_NEW_SLOT));
+                if (ModConfig.UPGRADE_TAKES_NEW_SLOT) {
+                    slotsNeeded++;
+                }
                 continue;
             }
 
@@ -260,24 +264,34 @@ public final class TomeLearningHandler {
                         + plainName(enchantment) + " " + numeral(known + 1) + " to level it up.";
                 return plan;
             }
-            plan.changes.put(id, Integer.valueOf(known + 1));
-            plan.upgraded.add(new Upgrade(enchantment, known, known + 1));
+            plan.changes.add(new Change(id, known + 1, ModConfig.UPGRADE_TAKES_NEW_SLOT));
+            plan.upgraded.add(new Upgrade(enchantment, known, known + 1,
+                    ModConfig.UPGRADE_TAKES_NEW_SLOT));
+            if (ModConfig.UPGRADE_TAKES_NEW_SLOT) {
+                slotsNeeded++;
+            }
         }
 
         int free = ModConfig.MAX_TOMES_PER_VILLAGER - tomes.count();
         if (slotsNeeded > free) {
+            // With UPGRADE_TAKES_NEW_SLOT on, a full villager cannot be levelled up either,
+            // so the "learn another" wording would be actively misleading there.
             plan.refusal = free <= 0
-                    ? "This villager is full at " + tomes.count() + " enchantment(s) and cannot "
-                    + "learn another. Try a different villager."
-                    : "That book needs " + slotsNeeded + " free slots and this villager has "
+                    ? "This villager is full at " + tomes.count() + " trade(s) and has no room "
+                    + "for another. Try a different villager."
+                    : "That needs " + slotsNeeded + " free slot(s) and this villager has "
                     + free + ".";
         }
         return plan;
     }
 
     private static void apply(Plan plan, ITomeKnowledge tomes) {
-        for (Map.Entry<ResourceLocation, Integer> change : plan.changes.entrySet()) {
-            tomes.setLevel(change.getKey(), change.getValue().intValue());
+        for (Change change : plan.changes) {
+            if (change.newSlot) {
+                tomes.add(change.id, change.level);
+            } else {
+                tomes.setOnly(change.id, change.level);
+            }
         }
     }
 
@@ -289,35 +303,56 @@ public final class TomeLearningHandler {
         }
         spawnParticles(villager, EnumParticleTypes.VILLAGER_HAPPY);
 
-        if (ModConfig.ANNOUNCE_LEARNED) {
-            // Counts up one line at a time. Reading the live count here instead would print
-            // the same final total on every line of a multi-enchantment book, since all of
-            // them are already applied by the time any message is sent. Upgrades are absent
-            // from this map on purpose - they never consume a slot, so they must not advance
-            // the number.
-            int slotsUsed = plan.slotsUsedBefore;
-            for (Map.Entry<Enchantment, Integer> entry : plan.learned.entrySet()) {
-                slotsUsed++;
-                ITextComponent message = new TextComponentString(PREFIX + TextFormatting.GREEN
-                        + "Learned ");
-                message.appendSibling(describe(entry.getKey(), entry.getValue().intValue()));
-                message.appendSibling(new TextComponentString(TextFormatting.GREEN + ". "
-                        + TextFormatting.GRAY + slotsUsed + "/"
-                        + ModConfig.MAX_TOMES_PER_VILLAGER + " slots used."));
-                player.sendMessage(message);
+        // Counts up one line at a time, and is shared with the upgrade block below so a book
+        // that both teaches and levels up keeps counting rather than restarting. Reading the
+        // live count instead would print the same final total on every line of a
+        // multi-enchantment book, since all of them are applied before any message is sent.
+        int slotsUsed = plan.slotsUsedBefore;
+
+        // The counter advances whether or not the matching message is switched on, so
+        // turning ANNOUNCE_LEARNED off cannot leave the upgrade lines reporting stale
+        // numbers.
+        for (Map.Entry<Enchantment, Integer> entry : plan.learned.entrySet()) {
+            slotsUsed++;
+            if (!ModConfig.ANNOUNCE_LEARNED) {
+                continue;
             }
+            ITextComponent message = new TextComponentString(PREFIX + TextFormatting.GREEN
+                    + "Learned ");
+            message.appendSibling(describe(entry.getKey(), entry.getValue().intValue()));
+            message.appendSibling(new TextComponentString(TextFormatting.GREEN + ". "
+                    + TextFormatting.GRAY + slotsUsed + "/"
+                    + ModConfig.MAX_TOMES_PER_VILLAGER + " slots used."));
+            player.sendMessage(message);
         }
 
-        if (ModConfig.ANNOUNCE_UPGRADED) {
-            for (Upgrade upgrade : plan.upgraded) {
-                ITextComponent message = new TextComponentString(PREFIX + TextFormatting.AQUA
-                        + "Upgraded ");
+        for (Upgrade upgrade : plan.upgraded) {
+            if (upgrade.keptOld) {
+                slotsUsed++;
+            }
+            if (!ModConfig.ANNOUNCE_UPGRADED) {
+                continue;
+            }
+            ITextComponent message = new TextComponentString(PREFIX + TextFormatting.AQUA
+                    + (upgrade.keptOld ? "Added " : "Upgraded "));
+            if (upgrade.keptOld) {
+                // The old trade is still on the board, so saying "upgraded X to Y" would be a
+                // lie - it now sells both, and the slot cost is the whole point of the
+                // setting, so it gets said out loud.
+                message.appendSibling(describe(upgrade.enchantment, upgrade.to));
+                message.appendSibling(new TextComponentString(TextFormatting.AQUA
+                        + " alongside "));
+                message.appendSibling(describe(upgrade.enchantment, upgrade.from));
+                message.appendSibling(new TextComponentString(TextFormatting.AQUA + ". "
+                        + TextFormatting.GRAY + slotsUsed + "/"
+                        + ModConfig.MAX_TOMES_PER_VILLAGER + " slots used."));
+            } else {
                 message.appendSibling(describe(upgrade.enchantment, upgrade.from));
                 message.appendSibling(new TextComponentString(TextFormatting.AQUA + " to "));
                 message.appendSibling(describe(upgrade.enchantment, upgrade.to));
                 message.appendSibling(new TextComponentString(TextFormatting.AQUA + "."));
-                player.sendMessage(message);
             }
+            player.sendMessage(message);
         }
     }
 
@@ -402,8 +437,7 @@ public final class TomeLearningHandler {
      * level-ups.
      */
     private static final class Plan {
-        final Map<ResourceLocation, Integer> changes =
-                new LinkedHashMap<ResourceLocation, Integer>();
+        final List<Change> changes = new ArrayList<Change>();
         final Map<Enchantment, Integer> learned = new LinkedHashMap<Enchantment, Integer>();
         final List<Upgrade> upgraded = new ArrayList<Upgrade>();
         String refusal;
@@ -411,15 +445,32 @@ public final class TomeLearningHandler {
         int slotsUsedBefore;
     }
 
+    /** One edit to make, once the whole book is known to be acceptable. */
+    private static final class Change {
+        final ResourceLocation id;
+        final int level;
+        /** True to add a tome alongside what is there, false to replace it in place. */
+        final boolean newSlot;
+
+        Change(ResourceLocation id, int level, boolean newSlot) {
+            this.id = id;
+            this.level = level;
+            this.newSlot = newSlot;
+        }
+    }
+
     private static final class Upgrade {
         final Enchantment enchantment;
         final int from;
         final int to;
+        /** True when the old trade was kept and this one took a slot of its own. */
+        final boolean keptOld;
 
-        Upgrade(Enchantment enchantment, int from, int to) {
+        Upgrade(Enchantment enchantment, int from, int to, boolean keptOld) {
             this.enchantment = enchantment;
             this.from = from;
             this.to = to;
+            this.keptOld = keptOld;
         }
     }
 }

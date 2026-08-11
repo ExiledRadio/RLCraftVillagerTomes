@@ -36,8 +36,11 @@ and the experience to pay for it. A book *lower* is refused and handed back.
 directly with no anvil, `pair_only` makes matching pairs the *only* route, and `off` freezes
 trades at the level they were taught.
 
-**The cap counts distinct enchantments, not levels.** Upgrading a trade never uses another
-slot, so a full villager can still be improved.
+**The cap counts trades.** By default upgrading replaces a trade rather than adding one, so
+that is the same as counting distinct enchantments and a full villager can still be improved.
+Turn on `UPGRADE_TAKES_NEW_SLOT` and levelling up keeps the old trade instead: a villager
+pushed from Unbreaking II to III sells both and spends two slots. Five enchantments at level I,
+or one at level V — that trade-off is the point of the setting.
 
 **Multi-enchantment books are all-or-nothing.** Every enchantment on the book has to be
 teachable and have a free slot, or the whole book is refused. Nothing is worse than watching a

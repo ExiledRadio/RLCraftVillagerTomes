@@ -16,7 +16,6 @@ import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
@@ -98,11 +97,11 @@ public final class CapabilityTomeKnowledge {
         public NBTBase writeNBT(Capability<ITomeKnowledge> capability, ITomeKnowledge instance,
                                 EnumFacing side) {
             NBTTagList list = new NBTTagList();
-            for (Map.Entry<ResourceLocation, Integer> entry : instance.view().entrySet()) {
-                NBTTagCompound tome = new NBTTagCompound();
-                tome.setString(TAG_ID, entry.getKey().toString());
-                tome.setInteger(TAG_LEVEL, entry.getValue().intValue());
-                list.appendTag(tome);
+            for (Tome tome : instance.view()) {
+                NBTTagCompound tag = new NBTTagCompound();
+                tag.setString(TAG_ID, tome.getEnchantment().toString());
+                tag.setInteger(TAG_LEVEL, tome.getLevel());
+                list.appendTag(tag);
             }
             NBTTagCompound root = new NBTTagCompound();
             root.setTag(TAG_LIST, list);
@@ -124,8 +123,12 @@ public final class CapabilityTomeKnowledge {
                 // A blank id means the entry was corrupted or hand-edited. Skipping it
                 // loses one trade; letting a null ResourceLocation through would take the
                 // whole entity load down with it.
+                // add, not replace: a villager taught under UPGRADE_TAKES_NEW_SLOT holds the
+                // same enchantment at more than one level, and every entry is its own trade.
+                // The on-disk format is unchanged from when only one level per enchantment
+                // was possible, so villagers saved by earlier versions load as they were.
                 if (id != null && !id.isEmpty() && level >= 1) {
-                    instance.setLevel(new ResourceLocation(id), level);
+                    instance.add(new ResourceLocation(id), level);
                 }
             }
         }

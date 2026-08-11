@@ -1,6 +1,7 @@
 package com.exiledradio.rlcraftvillagertomes;
 
 import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
+import com.exiledradio.rlcraftvillagertomes.capability.Tome;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -159,16 +160,17 @@ public final class TomeTradeSync {
 
         int added = 0;
         int reused = 0;
-        for (Map.Entry<ResourceLocation, Integer> entry : tomes.view().entrySet()) {
-            Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(entry.getKey());
+        for (Tome tome : tomes.view()) {
+            Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(tome.getEnchantment());
             if (enchantment == null) {
-                debug("sync skipped {}: no such enchantment in the registry", entry.getKey());
+                debug("sync skipped {}: no such enchantment in the registry",
+                        tome.getEnchantment());
                 // The mod that added this enchantment is not loaded right now. The entry
                 // stays in the capability so it comes back if the mod does; it simply has
                 // nothing to sell in the meantime.
                 continue;
             }
-            int level = entry.getValue().intValue();
+            int level = tome.getLevel();
             MerchantRecipe desired = buildRecipe(enchantment, level);
             MerchantRecipe reusable = findReusable(existing, enchantment, level, desired);
             MerchantRecipe live = reusable != null ? reusable : desired;
