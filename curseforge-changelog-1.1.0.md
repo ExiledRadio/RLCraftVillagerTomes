@@ -31,20 +31,10 @@ The anvil stays in the loop. Every level costs a trip and the experience to pay 
 
 The two old booleans expressed these same four behaviours, but gave no clue which combination produced which. **Your existing setting is carried over automatically** — the mod maps the old pair onto the matching mode on first load and says so in the log, so a config you had deliberately tuned keeps working and does not silently pick up the new default.
 
-## New: `UPGRADE_TAKES_NEW_SLOT`
-
-**Off by default**, so nothing changes unless you turn it on.
-
-With it on, levelling a trade up **keeps the old one and costs another slot**. A villager pushed from Unbreaking II to III sells both, and two of its five slots are gone.
-
-It changes what a slot means — from "an enchantment this villager deals in" to "one trade on the board". With five slots you can have five enchantments at level I, or one at level V and nothing else, and that trade-off is the point. It fills villagers fast, and a villager with no free slot cannot be levelled up at all; it says so rather than quietly replacing something.
-
 ## Also
 
 - Refusal messages now name which professions *will* accept books rather than only saying no, since librarians-only makes that the message most players meet first.
 - Refusing a matching book now tells you to go and make the higher one, instead of incorrectly claiming upgrading is disabled.
-- `MAX_TOMES_PER_VILLAGER` counts trades rather than distinct enchantments. With `UPGRADE_TAKES_NEW_SLOT` off those are the same number, so this only matters if you turn it on.
-- Villagers taught by 1.0.0 load unchanged — the saved format already stored a list of enchantment/level pairs, so it did not need to change.
 
 ## Install
 
