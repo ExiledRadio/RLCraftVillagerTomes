@@ -32,7 +32,7 @@ Works out of the box. No config editing, no dependencies.
 
 **Hold an enchanted book and sneak-right-click a villager.** The book is consumed and that enchantment becomes a permanent trade on that villager, priced in emeralds.
 
-**Hand over a matching book later and the trade levels up.** Anvil rules — a villager selling Unbreaking II, given another Unbreaking II, starts selling Unbreaking III.
+**Bring a higher book later and the trade levels up.** Buy two Unbreaking II off the villager, combine them at an anvil yourself, and hand the III back — its trade becomes Unbreaking III.
 
 **Librarians only**, by default. Books are a librarian's business, and the grind this removes is rerolling one over and over for the enchantment you want — not finding a librarian in the first place. `ALLOWED_PROFESSIONS` opens it up to any profession, or all of them, if you disagree.
 
@@ -54,10 +54,12 @@ That makes sneaking a gesture that would otherwise do nothing, which is exactly 
 
 | You give it | It knows | Result |
 |---|---|---|
-| Unbreaking II | Unbreaking II | **Unbreaking III** |
-| Unbreaking IV | Unbreaking II | **Unbreaking IV** — higher replaces |
+| Unbreaking III | Unbreaking II | **Unbreaking III** |
+| Unbreaking II | Unbreaking II | Refused — go make a III |
 | Unbreaking I | Unbreaking II | Refused, book handed back |
 | Unbreaking III | Unbreaking III | Refused, already at maximum |
+
+**The anvil stays in the loop.** A villager will not level itself up on copies of what it already sells, so every level costs you an anvil trip and the experience to pay for it. `UPGRADE_MODE` has three other settings if you want it cheaper — `pair_or_higher` lets two matching books step it up directly with no anvil at all.
 
 **Upgrading never uses a slot.** A villager at its cap can still be improved, so a full villager is not a finished one.
 

@@ -5,8 +5,8 @@
 Teach librarians the enchanted books you find.
 
 Hold an enchanted book, sneak-right-click a librarian, and it eats the book and starts selling
-that enchantment for emeralds — permanently. Hand the same villager a matching book later and
-the trade levels up by anvil rules.
+that enchantment for emeralds — permanently. Bring back a higher-level book later and the trade
+levels up.
 
 Built for RLCraft, but nothing in it is RLCraft-specific. Enchantments are read from the
 registry at runtime, so anything any other mod adds works without this mod knowing about it.
@@ -18,7 +18,7 @@ registry at runtime, so anything any other mod adds works without this mod knowi
 | | |
 |---|---|
 | **Teach** | Sneak-right-click a librarian while holding an enchanted book. The book is consumed and becomes a trade. `ALLOWED_PROFESSIONS` opens it up to other professions. |
-| **Upgrade** | Give a villager that already sells Unbreaking II another Unbreaking II, and the trade becomes Unbreaking III. |
+| **Upgrade** | Bring a book above what it currently sells. Buy two Unbreaking II, combine them at an anvil, hand the III back. |
 | **Price** | Ten emeralds per level by default — Mending I costs 10, Unbreaking III costs 30, Sharpness V costs 50 — plus a plain book, in the same slot order vanilla librarians use. |
 | **Cap** | Five enchantments per villager by default, so no single villager becomes the whole enchanting system. |
 
@@ -27,9 +27,14 @@ here it is either a new trade or one level closer to Unbreaking III.
 
 ## Rules
 
-**Levelling is anvil rules.** Two of the same level make the next one up. A book *higher* than
-the villager's current level replaces it outright (`HIGHER_LEVEL_REPLACES`, on by default). A
-book *lower* is refused and handed back.
+**Levelling needs a higher book, and the anvil stays in the loop.** A book above the villager's
+current level raises the trade to that level. A book *matching* it is refused — a villager will
+not level itself up on copies of what it already sells, so every level costs you an anvil trip
+and the experience to pay for it. A book *lower* is refused and handed back.
+
+`UPGRADE_MODE` has three other settings: `pair_or_higher` lets two matching books step it up
+directly with no anvil, `pair_only` makes matching pairs the *only* route, and `off` freezes
+trades at the level they were taught.
 
 **The cap counts distinct enchantments, not levels.** Upgrading a trade never uses another
 slot, so a full villager can still be improved.

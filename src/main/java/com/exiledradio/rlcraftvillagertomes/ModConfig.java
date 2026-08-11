@@ -7,6 +7,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.ConfigElement;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.client.config.IConfigElement;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -55,7 +56,7 @@ public class ModConfig {
             "ALLOW_CURSES", "MAX_LEARNABLE_LEVEL", "ALLOW_OVERLEVELING");
 
     private static final List<String> ORDER_UPGRADING = Arrays.asList(
-            "ENABLE_UPGRADING", "HIGHER_LEVEL_REPLACES", "CONSUME_BOOK_ON_REJECT");
+            "UPGRADE_MODE", "CONSUME_BOOK_ON_REJECT");
 
     private static final List<String> ORDER_PRICING = Arrays.asList(
             "BASE_EMERALD_COST", "EMERALDS_PER_LEVEL", "MIN_EMERALD_COST", "MAX_EMERALD_COST",
@@ -72,6 +73,17 @@ public class ModConfig {
     public static final String TRIGGER_RIGHT_CLICK = "right_click";
     public static final String TRIGGER_SNEAK_RIGHT_CLICK = "sneak_right_click";
     private static final String[] TRIGGER_VALUES = {TRIGGER_RIGHT_CLICK, TRIGGER_SNEAK_RIGHT_CLICK};
+
+    /** A book above the current level replaces it; a matching pair also steps it up by one. */
+    public static final String UPGRADE_PAIR_OR_HIGHER = "pair_or_higher";
+    /** Only a book above the current level counts. Matching pairs are refused. */
+    public static final String UPGRADE_HIGHER_ONLY = "higher_only";
+    /** Only a matching pair counts. A higher book is refused. */
+    public static final String UPGRADE_PAIR_ONLY = "pair_only";
+    /** Trades are frozen at whatever level they were first taught. */
+    public static final String UPGRADE_OFF = "off";
+    private static final String[] UPGRADE_MODE_VALUES = {
+            UPGRADE_HIGHER_ONLY, UPGRADE_PAIR_OR_HIGHER, UPGRADE_PAIR_ONLY, UPGRADE_OFF};
 
     /**
      * Hands Forge its own mutable copy of an order list.
@@ -113,8 +125,7 @@ public class ModConfig {
     public static boolean ALLOW_OVERLEVELING = false;
 
     // upgrading
-    public static boolean ENABLE_UPGRADING = true;
-    public static boolean HIGHER_LEVEL_REPLACES = true;
+    public static String UPGRADE_MODE = UPGRADE_HIGHER_ONLY;
     public static boolean CONSUME_BOOK_ON_REJECT = false;
 
     // pricing
@@ -170,6 +181,7 @@ public class ModConfig {
 
     public static void loadConfig() {
         migrateSecondInput();
+        migrateUpgradeBooleans();
         // Must run before the loaders: they call setCategoryPropertyOrder, which appends
         // any key the order list does not mention, and that call throws on a fixed-size
         // list the moment a stale key exists. It is also what deletes the old keys the
@@ -222,6 +234,50 @@ public class ModConfig {
                     + "now sits in the first trade slot with the emeralds second, matching vanilla. "
                     + "Your setting was kept.");
         }
+    }
+
+    /**
+     * Folds the old ENABLE_UPGRADING / HIGHER_LEVEL_REPLACES pair into UPGRADE_MODE.
+     *
+     * <p>The two booleans expressed exactly the four behaviours the mode now names, so this
+     * is lossless - it is a rename, not a behaviour change, and somebody who had deliberately
+     * turned upgrading off keeps it off rather than silently picking up the new default.
+     *
+     * <pre>
+     *   pair   higher  ->  mode
+     *   true   true        pair_or_higher
+     *   true   false       pair_only
+     *   false  true        higher_only
+     *   false  false       off
+     * </pre>
+     */
+    private static void migrateUpgradeBooleans() {
+        if (!config.hasCategory(CATEGORY_UPGRADING)) {
+            return;
+        }
+        ConfigCategory upgrading = config.getCategory(CATEGORY_UPGRADING);
+        boolean hasOld = upgrading.containsKey("ENABLE_UPGRADING")
+                || upgrading.containsKey("HIGHER_LEVEL_REPLACES");
+        if (!hasOld || upgrading.containsKey("UPGRADE_MODE")) {
+            return;
+        }
+
+        // A missing half of the pair takes its old default, which was true for both.
+        boolean fromPair = !upgrading.containsKey("ENABLE_UPGRADING")
+                || upgrading.get("ENABLE_UPGRADING").getBoolean(true);
+        boolean fromHigher = !upgrading.containsKey("HIGHER_LEVEL_REPLACES")
+                || upgrading.get("HIGHER_LEVEL_REPLACES").getBoolean(true);
+
+        String mode = fromPair
+                ? (fromHigher ? UPGRADE_PAIR_OR_HIGHER : UPGRADE_PAIR_ONLY)
+                : (fromHigher ? UPGRADE_HIGHER_ONLY : UPGRADE_OFF);
+
+        upgrading.put("UPGRADE_MODE", new Property("UPGRADE_MODE", mode, Property.Type.STRING));
+        RLCraftVillagerTomes.LOGGER.info(
+                "ENABLE_UPGRADING and HIGHER_LEVEL_REPLACES have been replaced by the single "
+                        + "UPGRADE_MODE setting. Yours carried over as '{}', so upgrading behaves "
+                        + "exactly as it did before.", mode);
+        // The two obsolete keys are cleared by pruneUnknownKeys once this returns.
     }
 
     /**
@@ -443,32 +499,40 @@ public class ModConfig {
         config.setCategoryComment(CATEGORY_UPGRADING,
                 "What happens when you hand a villager a book it already knows.\n"
                         + "\n"
-                        + "The default is anvil rules, which is what players already expect: two of\n"
-                        + "the same level make the next one up. Give a villager Unbreaking II, come\n"
-                        + "back later with another Unbreaking II, and its trade becomes Unbreaking\n"
-                        + "III. A lower level than it already sells is refused and handed back.");
+                        + "A book BELOW the villager's current level is always refused and handed\n"
+                        + "back, in every mode. Nothing here can make you lose a book.");
         config.setCategoryPropertyOrder(CATEGORY_UPGRADING, mutableOrder(ORDER_UPGRADING));
 
-        ENABLE_UPGRADING = config.getBoolean(
-                "ENABLE_UPGRADING", CATEGORY_UPGRADING, true,
-                "If true (default), matching a villager's current level bumps its trade up one.\n"
-                        + "Unbreaking II + Unbreaking II = Unbreaking III.\n"
+        UPGRADE_MODE = config.getString(
+                "UPGRADE_MODE", CATEGORY_UPGRADING, UPGRADE_HIGHER_ONLY,
+                "How a taught trade moves up a level.\n"
                         + "\n"
-                        + "Set to false to freeze every trade at the level it was first taught. A\n"
-                        + "villager taught Unbreaking I sells Unbreaking I forever, and getting III\n"
-                        + "means finding a III book and a villager with a free slot."
-        );
-
-        HIGHER_LEVEL_REPLACES = config.getBoolean(
-                "HIGHER_LEVEL_REPLACES", CATEGORY_UPGRADING, true,
-                "If true (default), handing over a book HIGHER than the villager's current level\n"
-                        + "replaces it outright - a Sharpness IV book turns a Sharpness II trade\n"
-                        + "straight into Sharpness IV. This does not stack with upgrading; the trade\n"
-                        + "becomes exactly the level of the book you gave it, not one above.\n"
+                        + "  higher_only     default. Only a book ABOVE the current level counts, and\n"
+                        + "                  the trade becomes exactly that book's level. A matching\n"
+                        + "                  book is refused.\n"
+                        + "                  So pushing a villager from Unbreaking II to III means\n"
+                        + "                  buying two Unbreaking II from it, combining them at an\n"
+                        + "                  anvil yourself, and bringing the III back. Every level\n"
+                        + "                  costs an anvil trip and the experience to pay for it,\n"
+                        + "                  and the villager cannot bootstrap itself upward on\n"
+                        + "                  copies of what it already sells.\n"
                         + "\n"
-                        + "Set to false and higher books are refused as well, so the only way up is\n"
-                        + "one level at a time through matching pairs. Strict, slow, and much closer\n"
-                        + "to how an anvil actually behaves."
+                        + "  pair_or_higher  two of the SAME level step the trade up by one, and a\n"
+                        + "                  higher book still replaces it outright. The most\n"
+                        + "                  convenient option: no anvil needed, no experience cost.\n"
+                        + "\n"
+                        + "  pair_only       two of the same level step it up by one, and a higher\n"
+                        + "                  book is refused. The only way up is one level at a time\n"
+                        + "                  through matching pairs.\n"
+                        + "\n"
+                        + "  off             trades freeze at the level they were first taught.\n"
+                        + "                  Getting Unbreaking III means finding a III book and a\n"
+                        + "                  villager with a free slot.\n"
+                        + "\n"
+                        + "Replaces the old ENABLE_UPGRADING and HIGHER_LEVEL_REPLACES pair, which\n"
+                        + "expressed these same four behaviours but gave no clue which combination\n"
+                        + "produced which. An existing config is carried over automatically.",
+                UPGRADE_MODE_VALUES
         );
 
         CONSUME_BOOK_ON_REJECT = config.getBoolean(
@@ -740,6 +804,13 @@ public class ModConfig {
             TEACH_TRIGGER = TRIGGER_RIGHT_CLICK;
         }
 
+        if (!Arrays.asList(UPGRADE_MODE_VALUES).contains(UPGRADE_MODE)) {
+            RLCraftVillagerTomes.LOGGER.warn(
+                    "UPGRADE_MODE '{}' is not one of {} - falling back to '{}'.",
+                    UPGRADE_MODE, Arrays.toString(UPGRADE_MODE_VALUES), UPGRADE_HIGHER_ONLY);
+            UPGRADE_MODE = UPGRADE_HIGHER_ONLY;
+        }
+
         allowedProfessions = toLookupSet(ALLOWED_PROFESSIONS);
         enchantmentWhitelist = toLookupSet(ENCHANTMENT_WHITELIST);
         enchantmentBlacklist = toLookupSet(ENCHANTMENT_BLACKLIST);
@@ -867,6 +938,22 @@ public class ModConfig {
     }
 
     // ------------------------------------------------------------- lookups
+
+    /** True when two books of the same level step a trade up by one. */
+    public static boolean upgradesFromPair() {
+        return UPGRADE_PAIR_OR_HIGHER.equals(UPGRADE_MODE) || UPGRADE_PAIR_ONLY.equals(UPGRADE_MODE);
+    }
+
+    /** True when a book above the current level raises the trade to that level. */
+    public static boolean upgradesFromHigher() {
+        return UPGRADE_PAIR_OR_HIGHER.equals(UPGRADE_MODE)
+                || UPGRADE_HIGHER_ONLY.equals(UPGRADE_MODE);
+    }
+
+    /** True when trades are frozen at whatever level they were first taught. */
+    public static boolean upgradingIsOff() {
+        return UPGRADE_OFF.equals(UPGRADE_MODE);
+    }
 
     /** True when a villager of this profession registry name is willing to be taught. */
     public static boolean isProfessionAllowed(ResourceLocation profession) {

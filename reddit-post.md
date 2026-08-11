@@ -11,7 +11,7 @@ get that sentence in front of someone and then get out of the way.
 
 Alternatives:
 
-> Shift right-click a villager with an enchanted book and it'll sell that enchantment forever - upgrades anvil-style if you give it a second one
+> Shift right-click a villager with an enchanted book and it'll sell that enchantment forever - buy two, anvil them together, hand it back to level the trade up
 
 > Every enchanted book you find is a one-time use, so I made a mod that turns them into permanent villager trades
 
@@ -46,12 +46,14 @@ Shift right-click a librarian while holding an enchanted book. It eats the book 
 ### Block 2
 
 ```
-Give it a second copy of the same level and the trade upgrades, anvil style - two Unbreaking II gets you Unbreaking III. Hand it something lower than it already sells and it gives the book straight back instead of wasting it.
+To level a trade up, bring it a book higher than what it already sells. So buy two Unbreaking II off it, combine them at an anvil yourself, and hand the III back - the trade becomes Unbreaking III. It won't level up off duplicates of what it already sells, which keeps the anvil in the loop.
+
+Hand it something lower than it sells and it gives the book straight back instead of wasting it.
 
 Five enchantments per villager, so you end up with a shelf of specialists rather than one god villager. Upgrading doesn't use a slot, so a full villager can still be improved.
 ```
 
-**Format:** bold `anvil style`
+**Format:** bold `bring it a book higher than what it already sells`
 
 **Then insert:** `images/VillageTomesUpgradeMessage.png`
 

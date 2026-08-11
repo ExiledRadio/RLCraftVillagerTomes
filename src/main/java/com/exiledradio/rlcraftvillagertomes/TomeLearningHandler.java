@@ -223,7 +223,7 @@ public final class TomeLearningHandler {
             }
 
             if (bookLevel > known) {
-                if (!ModConfig.HIGHER_LEVEL_REPLACES) {
+                if (!ModConfig.upgradesFromHigher()) {
                     plan.refusal = "This villager only levels up from matching books - it needs "
                             + "another " + plainName(enchantment) + " " + numeral(known)
                             + ", not a higher one.";
@@ -240,15 +240,24 @@ public final class TomeLearningHandler {
                 return plan;
             }
 
-            // Equal levels: the anvil rule. Two of the same make the next one up.
-            if (!ModConfig.ENABLE_UPGRADING) {
+            // Equal levels. Which of the three refusals applies is ordered most-specific
+            // first: being switched off beats being at the ceiling, and both beat the
+            // mode-specific advice, so the player is never told to fetch a higher book that
+            // cannot exist.
+            if (ModConfig.upgradingIsOff()) {
                 plan.refusal = "This villager already knows " + plainName(enchantment) + " "
-                        + numeral(known) + ", and upgrading is disabled.";
+                        + numeral(known) + ", and upgrading is switched off.";
                 return plan;
             }
             if (known >= cap) {
                 plan.refusal = plainName(enchantment) + " " + numeral(known)
                         + " is as high as this villager can go.";
+                return plan;
+            }
+            if (!ModConfig.upgradesFromPair()) {
+                plan.refusal = "This villager already sells " + plainName(enchantment) + " "
+                        + numeral(known) + ". Combine two of them at an anvil and bring back "
+                        + plainName(enchantment) + " " + numeral(known + 1) + " to level it up.";
                 return plan;
             }
             plan.changes.put(id, Integer.valueOf(known + 1));

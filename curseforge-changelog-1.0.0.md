@@ -8,7 +8,7 @@ Hold an enchanted book, **sneak and right-click a villager**. The book is consum
 
 Sneaking is the trigger for a reason specific to 1.12: vanilla refuses to open a villager's trade screen while you are sneaking, so it is a click that would otherwise do nothing. That leaves the plain right-click free for trading, even with a book in hand.
 
-Librarians only, by default — `ALLOWED_PROFESSIONS` opens it up if you want every profession trading enchantments. Five different enchantments per villager.
+Any villager, any profession, by default. Five different enchantments per villager.
 
 ## Upgrading
 
