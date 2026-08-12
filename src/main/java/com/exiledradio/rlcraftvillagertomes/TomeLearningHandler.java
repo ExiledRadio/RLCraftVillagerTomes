@@ -94,7 +94,11 @@ public final class TomeLearningHandler {
                 && SlotRequests.wants(tomes, held);
         boolean banking = !delivering && sneakAction && ModConfig.ENABLE_CHANCE
                 && !held.isEmpty() && CatalystRegistry.find(held) != null;
-        boolean asking = sneakAction && ModConfig.ENABLE_CHANCE && held.isEmpty();
+        // Empty hand is the inspect gesture, and it works whether or not the gamble is
+        // switched on - with ENABLE_CHANCE off there is no percentage to report but the
+        // villager's outstanding demand still matters, and that is the thing people check
+        // constantly while out gathering.
+        boolean asking = sneakAction && held.isEmpty();
 
         if (delivering || banking || asking) {
             event.setCanceled(true);
@@ -272,20 +276,35 @@ public final class TomeLearningHandler {
         }
     }
 
-    /** Answers the empty-handed sneak-click: where this villager currently stands. */
+    /**
+     * Answers the empty-handed sneak-click: where this villager currently stands, and what
+     * it is still owed.
+     *
+     * <p>This is the inspect gesture, and it is the one people use constantly while out
+     * gathering, so it has to answer both questions in one click. Before this it reported
+     * only the odds, which meant the only way to see an outstanding demand was to offer a
+     * book and be refused.
+     */
     private static void reportChance(EntityPlayer player, EntityVillager villager,
                                      ITomeKnowledge tomes) {
-        float banked = tomes.getBankedChance();
-        int filled = tomes.count();
-        int remaining = Math.max(0, ModConfig.MAX_TOMES_PER_VILLAGER - filled);
-        float total = ModConfig.getTotalChance(filled, 0, banked);
+        int open = SlotRequests.openSlots(tomes);
+        String slots = open + " slot" + (open == 1 ? "" : "s") + " free";
 
-        player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
-                + "Success: " + TextFormatting.WHITE + percent(total)
-                + TextFormatting.GRAY + " - " + remaining + " slot"
-                + (remaining == 1 ? "" : "s") + " left"));
+        if (ModConfig.ENABLE_CHANCE) {
+            float total = ModConfig.getTotalChance(
+                    SlotRequests.chanceSlots(tomes), 0.0F, tomes.getBankedChance());
+            player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
+                    + "Success: " + TextFormatting.WHITE + percent(total)
+                    + TextFormatting.GRAY + " - " + slots));
+            sendBonusLines(player, tomes);
+        } else {
+            player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
+                    + slots));
+        }
 
-        sendBonusLines(player, tomes);
+        // No-op when the villager has room, so an inspect only mentions a demand when there
+        // actually is one to satisfy.
+        SlotRequests.describeRequest(player, villager, tomes);
     }
 
     /**

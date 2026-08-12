@@ -8,6 +8,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.SoundCategory;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.WorldServer;
@@ -151,9 +152,10 @@ public final class SlotRequests {
         }
 
         if (ModConfig.ANNOUNCE_LEARNED) {
-            player.sendMessage(new TextComponentString(PREFIX + TextFormatting.GREEN
-                    + "Delivered " + taken + "." + TextFormatting.GRAY + " Still wanted:"));
-            listOutstanding(player, tomes);
+            ITextComponent message = new TextComponentString(PREFIX + TextFormatting.GREEN
+                    + "Delivered " + taken + "." + TextFormatting.GRAY + " Needed: ");
+            appendOutstanding(message, tomes);
+            player.sendMessage(message);
         }
     }
 
@@ -177,21 +179,36 @@ public final class SlotRequests {
         if (tomes.getRequest().isEmpty()) {
             return;
         }
-        player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
-                + "Wants for slot " + (unlockedSlots(tomes) + 1) + ":"));
-        listOutstanding(player, tomes);
+        ITextComponent message = new TextComponentString(PREFIX + TextFormatting.AQUA
+                + "Needed for slot " + (unlockedSlots(tomes) + 1) + ": ");
+        appendOutstanding(message, tomes);
+        player.sendMessage(message);
     }
 
-    private static void listOutstanding(EntityPlayer player, ITomeKnowledge tomes) {
+    /**
+     * Adds the whole demand to one message, comma separated.
+     *
+     * <p>One line rather than one per item on purpose. A five-item request printed as five
+     * lines buries everything above it, and this is a thing players check constantly while
+     * gathering - it has to be cheap to look at. Delivered lines go dark grey rather than
+     * disappearing, so the list stays the same shape as you fill it in.
+     */
+    private static void appendOutstanding(ITextComponent message, ITomeKnowledge tomes) {
+        boolean first = true;
         for (BountyItem line : tomes.getRequest()) {
+            if (!first) {
+                message.appendSibling(new TextComponentString(TextFormatting.GRAY + ", "));
+            }
+            first = false;
+
             Item item = ForgeRegistries.ITEMS.getValue(line.getItemName());
             String name = item == null
                     ? String.valueOf(line.getItemName())
                     : new ItemStack(item, 1, line.getMeta() < 0 ? 0 : line.getMeta())
                             .getDisplayName();
-            player.sendMessage(new TextComponentString(
+            message.appendSibling(new TextComponentString(
                     (line.isSatisfied() ? TextFormatting.DARK_GRAY : TextFormatting.WHITE)
-                            + "  " + name + " " + line.getDelivered() + "/" + line.getRequired()));
+                            + name + " " + line.getDelivered() + "/" + line.getRequired()));
         }
     }
 

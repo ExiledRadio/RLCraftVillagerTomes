@@ -226,14 +226,14 @@ public class ModConfig {
             "minecraft:iron_ingot=low",
             "minecraft:gold_ingot=low",
             "iceandfire:copper_ingot=low",
-            "xat:glowing_powder=low",
+            "xat:glowing_powder=low,2-4",
             "minecraft:emerald=low,6-18",
             "minecraft:diamond=low,4-12",
             // Mid.
             "minecraft:blaze_rod=mid",
             "scalinghealth:crystalshard=mid",
             "iceandfire:dragonbone=mid",
-            "xat:glowing_ingot=mid",
+            "xat:glowing_ingot=mid,1-3",
             // Block forms of the lesser materials - nine of something in one slot.
             "minecraft:coal_block=mid",
             "minecraft:redstone_block=mid",
