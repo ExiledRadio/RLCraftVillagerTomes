@@ -84,7 +84,7 @@ public final class CatalystRegistry {
         }
     }
 
-    /** {@code name=percent,min-max} */
+    /** {@code name=percent} */
     private static void parseTier(String raw) {
         String line = raw == null ? "" : raw.trim();
         if (line.isEmpty() || line.startsWith("#")) {
@@ -93,31 +93,24 @@ public final class CatalystRegistry {
 
         int equals = line.indexOf('=');
         if (equals < 1) {
-            warnLine("tier", line, "expected name=percent,min-max");
+            warnLine("tier", line, "expected name=percent");
             return;
         }
         String name = line.substring(0, equals).trim().toLowerCase(Locale.ROOT);
-        String[] parts = line.substring(equals + 1).split(",");
-        if (name.isEmpty() || parts.length != 2) {
-            warnLine("tier", line, "expected name=percent,min-max");
-            return;
-        }
-
-        String[] range = parts[1].split("-");
-        if (range.length != 2) {
-            warnLine("tier", line, "count range should look like 2-6");
+        // Anything after a comma is ignored rather than rejected: catalyst tiers used to
+        // carry a bounty count range too, and an older config should quietly lose the half
+        // that moved to BOUNTY_TIERS instead of filling the log with complaints.
+        String value = line.substring(equals + 1).split(",")[0].trim();
+        if (name.isEmpty() || value.isEmpty()) {
+            warnLine("tier", line, "expected name=percent");
             return;
         }
 
         float percent;
-        int min;
-        int max;
         try {
-            percent = Float.parseFloat(parts[0].trim());
-            min = Integer.parseInt(range[0].trim());
-            max = Integer.parseInt(range[1].trim());
+            percent = Float.parseFloat(value);
         } catch (NumberFormatException e) {
-            warnLine("tier", line, "percent and counts must be numbers");
+            warnLine("tier", line, "percent must be a number");
             return;
         }
 
@@ -125,16 +118,12 @@ public final class CatalystRegistry {
             warnLine("tier", line, "percent cannot be negative");
             return;
         }
-        if (min < 1 || max < min) {
-            warnLine("tier", line, "count range must be at least 1 and not backwards");
-            return;
-        }
         if (tiers.containsKey(name)) {
             warnLine("tier", line, "a tier called '" + name + "' is already defined");
             return;
         }
 
-        tiers.put(name, new CatalystTier(name, percent, min, max));
+        tiers.put(name, new CatalystTier(name, percent));
     }
 
     /** {@code namespace:path=tier} or {@code namespace:path:meta=tier} */

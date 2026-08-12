@@ -1,6 +1,7 @@
 package com.exiledradio.rlcraftvillagertomes;
 
 import com.exiledradio.rlcraftvillagertomes.capability.CapabilityTomeKnowledge;
+import com.exiledradio.rlcraftvillagertomes.bounty.BountyRegistry;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -51,6 +52,7 @@ public class RLCraftVillagerTomes {
     @EventHandler
     public void loadComplete(FMLLoadCompleteEvent event) {
         CatalystRegistry.resolveItems();
+        BountyRegistry.resolveItems();
     }
 
     @EventHandler

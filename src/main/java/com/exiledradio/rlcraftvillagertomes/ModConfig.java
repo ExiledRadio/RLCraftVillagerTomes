@@ -1,5 +1,6 @@
 package com.exiledradio.rlcraftvillagertomes;
 
+import com.exiledradio.rlcraftvillagertomes.bounty.BountyRegistry;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystRegistry;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.Item;
@@ -44,8 +45,10 @@ public class ModConfig {
     public static final String CATEGORY_PRICING = "pricing";
     /** Chat, sound and particle feedback. */
     public static final String CATEGORY_FEEDBACK = "feedback";
-    /** The rarity tier list that drives catalysts and slot requests. */
+    /** Items that improve a teaching attempt, and what each is worth. */
     public static final String CATEGORY_CATALYSTS = "catalysts";
+    /** Items villagers may demand for a slot, and how many of each. */
+    public static final String CATEGORY_BOUNTIES = "bounties";
     /** Whether teaching succeeds at all, and what moves the odds. */
     public static final String CATEGORY_CHANCE = "chance";
     /** What a villager demands before it opens another slot. */
@@ -54,7 +57,7 @@ public class ModConfig {
     /** Display order in the config screen. Without this the GUI sorts alphabetically. */
     private static final String[] CATEGORIES = {
             CATEGORY_LEARNING, CATEGORY_SLOTS, CATEGORY_CHANCE, CATEGORY_UPGRADING, CATEGORY_PRICING,
-            CATEGORY_CATALYSTS, CATEGORY_FEEDBACK,
+            CATEGORY_BOUNTIES, CATEGORY_CATALYSTS, CATEGORY_FEEDBACK,
     };
 
     private static final List<String> ORDER_LEARNING = Arrays.asList(
@@ -85,6 +88,9 @@ public class ModConfig {
 
     private static final List<String> ORDER_CATALYSTS = Arrays.asList(
             "CATALYST_TIERS", "CATALYST_ITEMS");
+
+    private static final List<String> ORDER_BOUNTIES = Arrays.asList(
+            "BOUNTY_TIERS", "BOUNTY_ITEMS");
 
     private static final List<String> ORDER_FEEDBACK = Arrays.asList(
             "ANNOUNCE_LEARNED", "ANNOUNCE_UPGRADED", "ANNOUNCE_REJECTED",
@@ -129,6 +135,7 @@ public class ModConfig {
         for (String key : ORDER_SLOTS) CATEGORY_OF_KEY.put(key, CATEGORY_SLOTS);
         for (String key : ORDER_CHANCE) CATEGORY_OF_KEY.put(key, CATEGORY_CHANCE);
         for (String key : ORDER_CATALYSTS) CATEGORY_OF_KEY.put(key, CATEGORY_CATALYSTS);
+        for (String key : ORDER_BOUNTIES) CATEGORY_OF_KEY.put(key, CATEGORY_BOUNTIES);
         for (String key : ORDER_FEEDBACK) CATEGORY_OF_KEY.put(key, CATEGORY_FEEDBACK);
     }
 
@@ -191,42 +198,54 @@ public class ModConfig {
 
     // catalysts
     public static String[] CATALYST_TIERS = {
-            "common=1.0,8-24",
-            "uncommon=2.5,4-12",
-            "rare=5.0,2-8",
-            "epic=10.0,1-4",
-            "legendary=15.0,1-2",
-            "mythic=30.0,1-1",
+            "common=1.0",
+            "uncommon=2.5",
+            "rare=5.0",
+            "epic=10.0",
+            "legendary=15.0",
+            "mythic=30.0",
     };
     public static String[] CATALYST_ITEMS = {
-            // Lowest tier - the stuff you have stacks of.
-            "minecraft:coal:0=common",
-            "minecraft:redstone=common",
-            "minecraft:glowstone_dust=common",
-            "minecraft:blaze_powder=common",
-            "minecraft:iron_ingot=common",
-            "minecraft:gold_ingot=common",
-            "iceandfire:copper_ingot=common",
             "xat:glowing_powder=common",
-            "minecraft:emerald=uncommon",
-            "minecraft:diamond=uncommon",
-            // Mid tier.
-            "minecraft:blaze_rod=rare",
-            "scalinghealth:crystalshard=rare",
-            "iceandfire:dragonbone=rare",
             "xat:glowing_ingot=rare",
-            // Block forms of the lesser materials - nine of something in one slot.
-            "minecraft:coal_block=epic",
-            "minecraft:redstone_block=epic",
-            "minecraft:glowstone=epic",
-            "minecraft:iron_block=epic",
-            "minecraft:gold_block=epic",
-            "minecraft:diamond_block=legendary",
-            "minecraft:emerald_block=legendary",
-            // Highest tier.
-            "iceandfire:dragon_skull=epic",
-            "charm:charged_emerald=legendary",
             "xat:glowing_gem=mythic",
+    };
+
+    // bounties
+    public static String[] BOUNTY_TIERS = {
+            "low=8-24",
+            "mid=2-8",
+            "high=1-2",
+    };
+    public static String[] BOUNTY_ITEMS = {
+            // Lowest - the stuff you keep in stacks.
+            "minecraft:coal:0=low",
+            "minecraft:redstone=low",
+            "minecraft:glowstone_dust=low",
+            "minecraft:blaze_powder=low",
+            "minecraft:iron_ingot=low",
+            "minecraft:gold_ingot=low",
+            "iceandfire:copper_ingot=low",
+            "xat:glowing_powder=low",
+            "minecraft:emerald=low,6-18",
+            "minecraft:diamond=low,4-12",
+            // Mid.
+            "minecraft:blaze_rod=mid",
+            "scalinghealth:crystalshard=mid",
+            "iceandfire:dragonbone=mid",
+            "xat:glowing_ingot=mid",
+            // Block forms of the lesser materials - nine of something in one slot.
+            "minecraft:coal_block=mid",
+            "minecraft:redstone_block=mid",
+            "minecraft:glowstone=mid",
+            "minecraft:iron_block=mid",
+            "minecraft:gold_block=mid",
+            "minecraft:diamond_block=mid,1-3",
+            "minecraft:emerald_block=mid,1-3",
+            // Highest.
+            "iceandfire:dragon_skull=high",
+            "xat:glowing_gem=high",
+            "charm:charged_emerald=high",
     };
 
     // feedback
@@ -281,6 +300,7 @@ public class ModConfig {
         loadChance();
         loadUpgrading();
         loadPricing();
+        loadBounties();
         loadCatalysts();
         loadFeedback();
 
@@ -1015,6 +1035,60 @@ public class ModConfig {
         );
     }
 
+    // ---------------------------------------------------------------- bounties
+
+    private static final String BOUNTIES_COMMENT =
+            "What villagers may demand before they open a tome slot.\n"
+                    + "\n"
+                    + "Separate from the catalyst list on purpose. These two overlap in places - a\n"
+                    + "glowing ingot is both a fine catalyst and a fine thing to be asked for - but\n"
+                    + "they answer different questions. A bounty item needs a quantity; a catalyst\n"
+                    + "needs a percentage. Most of what a villager demands is ordinary material that\n"
+                    + "would never belong in a percentage table.\n"
+                    + "\n"
+                    + "Run /villagertomes tiers in game to see what was parsed and what the item in\n"
+                    + "your hand counts as.";
+
+    private static final String BOUNTY_TIERS_COMMENT =
+            "Rarity bands, one per line, as name=min-max\n"
+                    + "\n"
+                    + "The range is how many of an item in that band a villager asks for. So\n"
+                    + "low=8-24 is the emerald x18 end of a request and high=1-2 is the single\n"
+                    + "dragon skull end.\n"
+                    + "\n"
+                    + "ORDER MATTERS. Cheapest band first: the position in this list is the ranking\n"
+                    + "that decides which bands an early slot is allowed to draw from. Names are\n"
+                    + "yours to choose and nothing is hard-coded.";
+
+    private static final String BOUNTY_ITEMS_COMMENT =
+            "Which items belong to which band, one per line, as modid:item=tier\n"
+                    + "\n"
+                    + "A quantity can be overridden per item by adding a range:\n"
+                    + "  minecraft:coal=low            asks for the band's 8-24\n"
+                    + "  minecraft:diamond=low,4-12    same band, its own quantity\n"
+                    + "\n"
+                    + "That override exists because bands are coarse and value inside one is not.\n"
+                    + "Coal and diamonds are both things you keep in stacks, but being asked for\n"
+                    + "twenty of each is not the same ask at all.\n"
+                    + "\n"
+                    + "Metadata is optional: minecraft:coal:0 is coal but not charcoal. NBT is\n"
+                    + "ignored, so an enchanted or renamed copy of a material still counts.\n"
+                    + "\n"
+                    + "Items no loaded mod registers are never asked for. That check matters more\n"
+                    + "here than for catalysts: a request is never re-rolled, so demanding something\n"
+                    + "this instance does not have would strand the villager permanently.";
+
+    private static void loadBounties() {
+        config.setCategoryComment(CATEGORY_BOUNTIES, BOUNTIES_COMMENT);
+        config.setCategoryPropertyOrder(CATEGORY_BOUNTIES, mutableOrder(ORDER_BOUNTIES));
+
+        BOUNTY_TIERS = config.getStringList(
+                "BOUNTY_TIERS", CATEGORY_BOUNTIES, BOUNTY_TIERS, BOUNTY_TIERS_COMMENT);
+
+        BOUNTY_ITEMS = config.getStringList(
+                "BOUNTY_ITEMS", CATEGORY_BOUNTIES, BOUNTY_ITEMS, BOUNTY_ITEMS_COMMENT);
+    }
+
     // --------------------------------------------------------------- catalysts
 
     private static void loadCatalysts() {
@@ -1204,6 +1278,7 @@ public class ModConfig {
         // Syntax is checked here; the item names are looked up later, once every mod has
         // finished registering. See CatalystRegistry for why those are two separate steps.
         CatalystRegistry.reload(CATALYST_TIERS, CATALYST_ITEMS);
+        BountyRegistry.reload(BOUNTY_TIERS, BOUNTY_ITEMS);
     }
 
     /**

@@ -2,6 +2,9 @@ package com.exiledradio.rlcraftvillagertomes;
 
 import com.exiledradio.rlcraftvillagertomes.capability.CapabilityTomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
+import com.exiledradio.rlcraftvillagertomes.bounty.BountyEntry;
+import com.exiledradio.rlcraftvillagertomes.bounty.BountyRegistry;
+import com.exiledradio.rlcraftvillagertomes.bounty.BountyTier;
 import com.exiledradio.rlcraftvillagertomes.capability.Tome;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystEntry;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystRegistry;
@@ -141,7 +144,6 @@ public class CommandVillagerTomes extends CommandBase {
             for (CatalystTier tier : tiers) {
                 reply(sender, TextFormatting.WHITE + "  " + tier.getName()
                         + TextFormatting.GRAY + "  +" + tier.getPercent() + "%"
-                        + "  asks " + tier.getMinCount() + "-" + tier.getMaxCount()
                         + "  (" + CatalystRegistry.getEntriesInTier(tier.getName()).size()
                         + " item(s))");
             }
@@ -156,6 +158,30 @@ public class CommandVillagerTomes extends CommandBase {
                 boolean found = !missing.contains(entry.describe());
                 reply(sender, (found ? TextFormatting.WHITE : TextFormatting.DARK_GRAY)
                         + "  " + entry.describe() + " -> " + entry.getTier().getName()
+                        + (found ? "" : "  (not installed)"));
+            }
+        }
+
+        Collection<BountyTier> bTiers = BountyRegistry.getTiers();
+        if (!bTiers.isEmpty()) {
+            reply(sender, TextFormatting.AQUA + "Bounty tiers (" + bTiers.size() + "):");
+            for (BountyTier tier : bTiers) {
+                reply(sender, TextFormatting.WHITE + "  " + tier.getName()
+                        + TextFormatting.GRAY + "  asks " + tier.getMinCount() + "-"
+                        + tier.getMaxCount() + "  ("
+                        + BountyRegistry.getUsableEntriesInTier(tier.getName()).size()
+                        + " usable item(s))");
+            }
+            List<String> bMissing = BountyRegistry.getUnresolved();
+            reply(sender, TextFormatting.AQUA + "Bounty items ("
+                    + BountyRegistry.getEntries().size() + ", " + bMissing.size()
+                    + " not installed):");
+            for (BountyEntry entry : BountyRegistry.getEntries()) {
+                boolean found = !bMissing.contains(entry.describe());
+                reply(sender, (found ? TextFormatting.WHITE : TextFormatting.DARK_GRAY)
+                        + "  " + entry.describe() + " -> " + entry.getTier().getName()
+                        + " " + entry.getMinCount() + "-" + entry.getMaxCount()
+                        + (entry.hasOwnCount() ? " (override)" : "")
                         + (found ? "" : "  (not installed)"));
             }
         }
