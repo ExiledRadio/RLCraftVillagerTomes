@@ -78,7 +78,7 @@ public class ModConfig {
 
     private static final List<String> ORDER_SLOTS = Arrays.asList(
             "LOCK_SLOTS", "REQUEST_ITEMS_BASE", "REQUEST_ITEMS_PER_SLOT", "REQUEST_ITEMS_MAX",
-            "REQUEST_TIERS_BASE", "REQUEST_TIERS_PER_SLOT");
+            "REQUEST_TIERS_BASE", "REQUEST_TIERS_PER_SLOT", "QUEST_LOG_CAPACITY");
 
     private static final List<String> ORDER_CHANCE = Arrays.asList(
             "ENABLE_CHANCE", "BASE_SUCCESS_CHANCE", "CHANCE_PER_SLOT", "MAX_SUCCESS_CHANCE",
@@ -184,6 +184,7 @@ public class ModConfig {
     public static int REQUEST_ITEMS_MAX = 6;
     public static int REQUEST_TIERS_BASE = 2;
     public static int REQUEST_TIERS_PER_SLOT = 1;
+    public static int QUEST_LOG_CAPACITY = 10;
 
     // chance
     public static boolean ENABLE_CHANCE = true;
@@ -901,6 +902,16 @@ public class ModConfig {
                     + "expensive with the ordinary rather than being a solid wall of legendary\n"
                     + "items. Ordering in CATALYST_TIERS is the ranking - cheapest first.";
 
+    private static final String QUEST_LOG_CAPACITY_COMMENT =
+            "How many villagers one quest log can track.\n"
+                    + "\n"
+                    + "A quest log is a book and quill you sneak-click a villager with: it\n"
+                    + "becomes a written book listing what that villager wants and where it\n"
+                    + "lives, and entries cross themselves off once the slot is paid for.\n"
+                    + "\n"
+                    + "One villager per page, so this is also the page count. Vanilla books\n"
+                    + "hold 50 pages, which is the ceiling here.";
+
     private static void loadSlots() {
         config.setCategoryComment(CATEGORY_SLOTS, SLOTS_COMMENT);
         config.setCategoryPropertyOrder(CATEGORY_SLOTS, mutableOrder(ORDER_SLOTS));
@@ -927,6 +938,10 @@ public class ModConfig {
         REQUEST_TIERS_PER_SLOT = config.getInt(
                 "REQUEST_TIERS_PER_SLOT", CATEGORY_SLOTS, 1, 0, 8,
                 REQUEST_TIERS_PER_SLOT_COMMENT);
+
+        QUEST_LOG_CAPACITY = config.getInt(
+                "QUEST_LOG_CAPACITY", CATEGORY_SLOTS, 10, 1, 50,
+                QUEST_LOG_CAPACITY_COMMENT);
     }
 
     // ------------------------------------------------------------------ chance

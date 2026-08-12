@@ -5,6 +5,8 @@ import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.Tome;
 import com.exiledradio.rlcraftvillagertomes.bounty.SlotRequests;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystEntry;
+import com.exiledradio.rlcraftvillagertomes.quest.QuestBinding;
+import com.exiledradio.rlcraftvillagertomes.quest.QuestLog;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystRegistry;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -99,8 +101,12 @@ public final class TomeLearningHandler {
         // villager's outstanding demand still matters, and that is the thing people check
         // constantly while out gathering.
         boolean asking = sneakAction && held.isEmpty();
+        // A book and quill becomes a log; an existing log records the villager it is
+        // clicked at. Checked before the catalyst and bounty branches so neither can claim
+        // the click if somebody ever lists a book in one of those lists.
+        boolean logging = sneakAction && (QuestLog.isLog(held) || QuestLog.isBlank(held));
 
-        if (delivering || banking || asking) {
+        if (logging || delivering || banking || asking) {
             event.setCanceled(true);
             event.setCancellationResult(EnumActionResult.SUCCESS);
             player.swingArm(event.getHand());
@@ -108,6 +114,18 @@ public final class TomeLearningHandler {
             String blocker = findVillagerBlocker(villager);
             if (blocker != null) {
                 refuse(player, villager, held, blocker);
+            } else if (logging) {
+                ItemStack log = held;
+                if (QuestLog.isBlank(held)) {
+                    log = QuestLog.createFrom(held, player);
+                    // The quill is gone and the log is a different stack, so it has to be
+                    // put somewhere - the now-empty hand if the quill was the last one,
+                    // otherwise wherever there is room.
+                    if (!player.inventory.addItemStackToInventory(log)) {
+                        player.dropItem(log, false);
+                    }
+                }
+                QuestBinding.offer(player, villager, log, tomes);
             } else if (delivering) {
                 SlotRequests.deliver(player, villager, held, tomes);
             } else if (banking) {

@@ -6,6 +6,7 @@ import com.exiledradio.rlcraftvillagertomes.bounty.BountyEntry;
 import com.exiledradio.rlcraftvillagertomes.bounty.BountyRegistry;
 import com.exiledradio.rlcraftvillagertomes.bounty.BountyTier;
 import com.exiledradio.rlcraftvillagertomes.capability.Tome;
+import com.exiledradio.rlcraftvillagertomes.quest.QuestBinding;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystEntry;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystRegistry;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystTier;
@@ -62,7 +63,7 @@ public class CommandVillagerTomes extends CommandBase {
 
     @Override
     public String getUsage(ICommandSender sender) {
-        return "/villagertomes <list|tiers|teach|forget|clear> [enchantment] [level]";
+        return "/villagertomes <list|tiers|name|teach|forget|clear> [args]";
     }
 
     /** Zero so that unprivileged players can reach {@code list}. See {@link #checkAdmin}. */
@@ -88,6 +89,10 @@ public class CommandVillagerTomes extends CommandBase {
             executeList(sender);
         } else if ("tiers".equals(subCommand)) {
             executeTiers(sender);
+        } else if ("name".equals(subCommand)) {
+            executeName(sender, args);
+        } else if ("cancel".equals(subCommand)) {
+            executeCancel(sender);
         } else if ("teach".equals(subCommand)) {
             executeTeach(server, sender, args);
         } else if ("forget".equals(subCommand)) {
@@ -206,6 +211,43 @@ public class CommandVillagerTomes extends CommandBase {
                                 + entry.getTier().getPercent() + "%");
             }
         }
+    }
+
+    /**
+     * Finishes naming a villager for the quest log.
+     *
+     * <p>Reached by clicking the chat button, which pre-fills this command rather than
+     * running it - the player types the name themselves and presses enter, and that is the
+     * confirm. Open to everyone: it only names a villager you are already standing next to.
+     *
+     * <p>The rest of the line is taken verbatim so names can contain spaces.
+     */
+    private void executeName(ICommandSender sender, String[] args) throws CommandException {
+        if (!(sender instanceof EntityPlayer)) {
+            throw new CommandException("Only a player can name a villager.");
+        }
+        if (args.length < 2) {
+            throw new WrongUsageException("/villagertomes name <name>");
+        }
+        StringBuilder name = new StringBuilder();
+        for (int i = 1; i < args.length; i++) {
+            if (i > 1) {
+                name.append(' ');
+            }
+            name.append(args[i]);
+        }
+
+        String problem = QuestBinding.completeNaming((EntityPlayer) sender, name.toString());
+        if (problem != null) {
+            reply(sender, TextFormatting.YELLOW + problem);
+        }
+    }
+
+    private void executeCancel(ICommandSender sender) throws CommandException {
+        if (!(sender instanceof EntityPlayer)) {
+            throw new CommandException("Only a player has anything to cancel.");
+        }
+        reply(sender, TextFormatting.GRAY + QuestBinding.cancel((EntityPlayer) sender));
     }
 
     private void executeTeach(MinecraftServer server, ICommandSender sender, String[] args)
@@ -352,7 +394,8 @@ public class CommandVillagerTomes extends CommandBase {
     public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
                                           String[] args, net.minecraft.util.math.BlockPos pos) {
         if (args.length == 1) {
-            return getListOfStringsMatchingLastWord(args, "list", "tiers", "teach", "forget", "clear");
+            return getListOfStringsMatchingLastWord(args, "list", "tiers", "name", "cancel", "teach",
+                    "forget", "clear");
         }
         if (args.length == 2 && ("teach".equals(args[0]) || "forget".equals(args[0]))) {
             List<String> names = new ArrayList<String>();

@@ -14,6 +14,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
 import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
+import com.exiledradio.rlcraftvillagertomes.quest.QuestBinding;
 
 import java.util.List;
 
@@ -147,8 +148,13 @@ public final class SlotRequests {
             player.sendMessage(new TextComponentString(PREFIX + TextFormatting.GREEN
                     + "Slot unlocked. " + TextFormatting.GRAY + "This villager now has "
                     + unlockedSlots(tomes) + " slot(s), " + openSlots(tomes) + " free."));
+            // The demand this entry was tracking no longer exists, so the page goes with it.
+            QuestBinding.clearIfLogged(player, villager);
             return;
         }
+
+        // Keeps a carried log's counts in step without needing to re-name the villager.
+        QuestBinding.refreshIfLogged(player, villager, tomes);
 
         if (ModConfig.ANNOUNCE_LEARNED) {
             player.sendMessage(new TextComponentString(PREFIX + TextFormatting.GREEN
