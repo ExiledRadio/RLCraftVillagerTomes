@@ -17,6 +17,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.EnumParticleTypes;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
@@ -220,7 +221,9 @@ public final class TomeLearningHandler {
 
         // Measured against the floor with no pity, because pity is per enchantment and this
         // deposit is not about any particular book.
-        float current = ModConfig.getTotalChance(tomes.count(), 0.0F, tomes.getBankedChance());
+        // Compared against the preparation ceiling, not the absolute one: pity can push a
+        // villager past 80% but it is not something a catalyst can add to.
+        float current = ModConfig.getPreparedChance(tomes.count(), tomes.getBankedChance());
         if (current >= ModConfig.MAX_SUCCESS_CHANCE) {
             refuse(player, villager, held, "This villager is already at the maximum "
                     + percent(ModConfig.MAX_SUCCESS_CHANCE) + " chance - keep that for another.");
@@ -274,7 +277,10 @@ public final class TomeLearningHandler {
             String name = enchantment == null
                     ? String.valueOf(owed.getKey()) : plainName(enchantment);
             player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  " + name
-                    + " +" + percent(owed.getValue().floatValue())));
+                    + " +" + percent(owed.getValue().floatValue())
+                    + " | " + TextFormatting.WHITE
+                    + percent(ModConfig.getTotalChance(
+                            filled, owed.getValue().floatValue(), banked))));
         }
     }
 

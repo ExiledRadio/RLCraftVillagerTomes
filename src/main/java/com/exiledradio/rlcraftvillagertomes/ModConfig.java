@@ -74,7 +74,7 @@ public class ModConfig {
     private static final List<String> ORDER_CHANCE = Arrays.asList(
             "ENABLE_CHANCE", "BASE_SUCCESS_CHANCE", "CHANCE_PER_SLOT", "MAX_SUCCESS_CHANCE",
             "MIN_SUCCESS_CHANCE",
-            "PITY_PER_BOOK_LEVEL", "PITY_CAP", "CONSUME_BOOK_ON_FAILURE",
+            "PITY_PER_BOOK_LEVEL", "ABSOLUTE_MAX_CHANCE", "CONSUME_BOOK_ON_FAILURE",
             "CONSUME_CATALYSTS_ON_FAILURE");
 
     private static final List<String> ORDER_CATALYSTS = Arrays.asList(
@@ -82,7 +82,7 @@ public class ModConfig {
 
     private static final List<String> ORDER_FEEDBACK = Arrays.asList(
             "ANNOUNCE_LEARNED", "ANNOUNCE_UPGRADED", "ANNOUNCE_REJECTED",
-            "PLAY_SOUNDS", "SPAWN_PARTICLES", "DEBUG_LOGGING");
+            "PLAY_SOUNDS", "FANFARE_ENCHANTMENTS", "SPAWN_PARTICLES", "DEBUG_LOGGING");
 
     /** Valid values for {@link #TEACH_TRIGGER}, also shown as a dropdown in the GUI. */
     public static final String TRIGGER_RIGHT_CLICK = "right_click";
@@ -170,7 +170,7 @@ public class ModConfig {
     public static float MAX_SUCCESS_CHANCE = 80.0F;
     public static float MIN_SUCCESS_CHANCE = 1.0F;
     public static float PITY_PER_BOOK_LEVEL = 5.0F;
-    public static float PITY_CAP = 70.0F;
+    public static float ABSOLUTE_MAX_CHANCE = 100.0F;
     public static boolean CONSUME_BOOK_ON_FAILURE = true;
     public static boolean CONSUME_CATALYSTS_ON_FAILURE = true;
 
@@ -194,6 +194,7 @@ public class ModConfig {
     public static boolean ANNOUNCE_UPGRADED = true;
     public static boolean ANNOUNCE_REJECTED = true;
     public static boolean PLAY_SOUNDS = true;
+    public static String[] FANFARE_ENCHANTMENTS = {"somanyenchantments:supreme*"};
     public static boolean SPAWN_PARTICLES = true;
     public static boolean DEBUG_LOGGING = false;
 
@@ -215,6 +216,9 @@ public class ModConfig {
 
     /** Player-readable form of {@link #ALLOWED_PROFESSIONS}; null when every profession qualifies. */
     private static String allowedProfessionsLabel;
+
+    /** Normalised {@link #FANFARE_ENCHANTMENTS}, some entries ending in a {@code *}. */
+    private static Set<String> fanfarePatterns = new HashSet<String>();
 
     public static void init(File configFile) {
         if (config == null) {
@@ -866,13 +870,22 @@ public class ModConfig {
                         + "mercy rule entirely and let bad luck run forever."
         );
 
-        PITY_CAP = config.getFloat(
-                "PITY_CAP", CATEGORY_CHANCE, 70.0F, 0.0F, 100.0F,
-                "The highest the failure floor alone can push an attempt, as a percentage.\n"
+        ABSOLUTE_MAX_CHANCE = config.getFloat(
+                "ABSOLUTE_MAX_CHANCE", CATEGORY_CHANCE, 100.0F, 1.0F, 100.0F,
+                "The hard ceiling once failure bonuses are counted, as a percentage.\n"
                         + "\n"
-                        + "70 (default) sits below MAX_SUCCESS_CHANCE on purpose: persistence alone\n"
-                        + "gets you close, but the last stretch to the ceiling still costs catalysts.\n"
-                        + "Raise it to 80 and enough failures eventually buy the ceiling for free."
+                        + "This is the one limit pity CAN pass MAX_SUCCESS_CHANCE to reach. The order\n"
+                        + "is deliberate: preparation - your villager's slots plus banked catalysts -\n"
+                        + "is capped at MAX_SUCCESS_CHANCE, and what you are owed for past failures is\n"
+                        + "added on top of that cap.\n"
+                        + "\n"
+                        + "So a villager sitting at the 80% preparation ceiling that already owes you\n"
+                        + "15% from a burnt book reads 95%, and enough losses eventually reach 100%.\n"
+                        + "No amount of preparation alone ever gets there - only bad luck does, which\n"
+                        + "means the guarantee is something you are compensated with rather than\n"
+                        + "something you can buy.\n"
+                        + "\n"
+                        + "Set to 80 to match MAX_SUCCESS_CHANCE and take the escape hatch away."
         );
 
         CONSUME_BOOK_ON_FAILURE = config.getBoolean(
@@ -977,6 +990,26 @@ public class ModConfig {
                         + "book - the same yes and no noises it makes while trading."
         );
 
+        FANFARE_ENCHANTMENTS = config.getStringList(
+                "FANFARE_ENCHANTMENTS", CATEGORY_FEEDBACK, FANFARE_ENCHANTMENTS,
+                "Enchantments whose successful binding is worth a fanfare - one registry name\n"
+                        + "per line. Landing one of these plays the advancement jingle instead of the\n"
+                        + "usual villager noise.\n"
+                        + "\n"
+                        + "A trailing * matches any name that starts with what comes before it, which\n"
+                        + "is why the default is a single line: somanyenchantments:supreme* covers all\n"
+                        + "six Supreme enchantments without naming them. Add\n"
+                        + "somanyenchantments:advanced* to include the nineteen Advanced ones, or list\n"
+                        + "exact names for finer control.\n"
+                        + "\n"
+                        + "Keep this short. The whole point is that the sound means something, and a\n"
+                        + "jingle you hear every third book is just noise. Empty disables it.\n"
+                        + "Ignored entirely when PLAY_SOUNDS is off.\n"
+                        + "\n"
+                        + "The sound is vanilla's own ui.toast.challenge_complete, so it is already on\n"
+                        + "every client and this mod ships no audio of its own."
+        );
+
         SPAWN_PARTICLES = config.getBoolean(
                 "SPAWN_PARTICLES", CATEGORY_FEEDBACK, true,
                 "If true (default), green sparkles on a book accepted, angry puffs on one\n"
@@ -1026,8 +1059,8 @@ public class ModConfig {
         if (MIN_SUCCESS_CHANCE < 0.0F) MIN_SUCCESS_CHANCE = 0.0F;
         if (CHANCE_PER_SLOT < 0.0F) CHANCE_PER_SLOT = 0.0F;
         if (PITY_PER_BOOK_LEVEL < 0.0F) PITY_PER_BOOK_LEVEL = 0.0F;
-        if (PITY_CAP < BASE_SUCCESS_CHANCE) PITY_CAP = BASE_SUCCESS_CHANCE;
-        if (PITY_CAP > 100.0F) PITY_CAP = 100.0F;
+        if (ABSOLUTE_MAX_CHANCE < MAX_SUCCESS_CHANCE) ABSOLUTE_MAX_CHANCE = MAX_SUCCESS_CHANCE;
+        if (ABSOLUTE_MAX_CHANCE > 100.0F) ABSOLUTE_MAX_CHANCE = 100.0F;
 
         if (EXTRA_INPUT_COUNT < 0) EXTRA_INPUT_COUNT = 0;
         if (EXTRA_INPUT_COUNT > MAX_STACK) EXTRA_INPUT_COUNT = MAX_STACK;
@@ -1048,6 +1081,7 @@ public class ModConfig {
         enchantmentWhitelist = toLookupSet(ENCHANTMENT_WHITELIST);
         enchantmentBlacklist = toLookupSet(ENCHANTMENT_BLACKLIST);
         allowedProfessionsLabel = describeProfessions(ALLOWED_PROFESSIONS);
+        fanfarePatterns = toLookupSet(FANFARE_ENCHANTMENTS);
 
         extraInput = resolveExtraInput();
 
@@ -1180,13 +1214,12 @@ public class ModConfig {
      * The floor an attempt starts from, before banked catalysts.
      *
      * <p>Base, plus the pity earned by failing this enchantment on this villager, capped by
-     * {@link #PITY_CAP}. Deliberately separate from the banked half so both the chat readout
-     * and the roll can be built from the same two pieces and cannot disagree.
+     * {@link #MAX_SUCCESS_CHANCE}. Deliberately separate from the pity half so both the chat
+     * readout and the roll are built from the same pieces and cannot disagree.
      */
-    public static float getFloorChance(int slotsFilled, float pity) {
-        float base = getBaseChance(slotsFilled);
-        float floor = base + Math.max(0.0F, pity);
-        return Math.min(floor, Math.max(base, PITY_CAP));
+    public static float getPreparedChance(int slotsFilled, float banked) {
+        float prepared = getBaseChance(slotsFilled) + Math.max(0.0F, banked);
+        return Math.min(prepared, MAX_SUCCESS_CHANCE);
     }
 
     /** What a villager is worth before pity or catalysts, given how many slots it has filled. */
@@ -1196,10 +1229,35 @@ public class ModConfig {
 
     /** The final odds of an attempt: floor plus banked catalysts, clamped to the limits. */
     public static float getTotalChance(int slotsFilled, float pity, float banked) {
-        float total = getFloorChance(slotsFilled, pity) + Math.max(0.0F, banked);
-        if (total > MAX_SUCCESS_CHANCE) total = MAX_SUCCESS_CHANCE;
+        float total = getPreparedChance(slotsFilled, banked) + Math.max(0.0F, pity);
+        if (total > ABSOLUTE_MAX_CHANCE) total = ABSOLUTE_MAX_CHANCE;
         if (total < MIN_SUCCESS_CHANCE) total = MIN_SUCCESS_CHANCE;
         return total;
+    }
+
+    /**
+     * Whether landing this enchantment is worth the advancement jingle.
+     *
+     * <p>A trailing {@code *} matches by prefix, which is what makes one line cover a whole
+     * family - SoManyEnchantments names its top tier {@code supremesharpness},
+     * {@code supremesmite} and so on, so {@code somanyenchantments:supreme*} catches all six
+     * and keeps catching them if the mod adds a seventh.
+     */
+    public static boolean isFanfareEnchantment(ResourceLocation enchantment) {
+        if (enchantment == null || fanfarePatterns.isEmpty()) {
+            return false;
+        }
+        String key = enchantment.toString().toLowerCase(Locale.ROOT);
+        for (String pattern : fanfarePatterns) {
+            if (pattern.endsWith("*")) {
+                if (key.startsWith(pattern.substring(0, pattern.length() - 1))) {
+                    return true;
+                }
+            } else if (pattern.equals(key)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** True when two books of the same level step a trade up by one. */
