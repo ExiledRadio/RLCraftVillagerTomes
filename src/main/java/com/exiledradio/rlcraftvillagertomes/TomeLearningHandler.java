@@ -3,6 +3,7 @@ package com.exiledradio.rlcraftvillagertomes;
 import com.exiledradio.rlcraftvillagertomes.capability.CapabilityTomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.Tome;
+import com.exiledradio.rlcraftvillagertomes.bounty.SlotRequests;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystEntry;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystRegistry;
 import net.minecraft.enchantment.Enchantment;
@@ -89,11 +90,13 @@ public final class TomeLearningHandler {
         boolean sneakAction = ModConfig.ENABLE_LEARNING && isTeachingClick(player);
         boolean teaching = sneakAction && !held.isEmpty()
                 && held.getItem() == Items.ENCHANTED_BOOK;
-        boolean banking = sneakAction && ModConfig.ENABLE_CHANCE && !held.isEmpty()
-                && CatalystRegistry.find(held) != null;
+        boolean delivering = sneakAction && ModConfig.LOCK_SLOTS && !held.isEmpty()
+                && SlotRequests.wants(tomes, held);
+        boolean banking = !delivering && sneakAction && ModConfig.ENABLE_CHANCE
+                && !held.isEmpty() && CatalystRegistry.find(held) != null;
         boolean asking = sneakAction && ModConfig.ENABLE_CHANCE && held.isEmpty();
 
-        if (banking || asking) {
+        if (delivering || banking || asking) {
             event.setCanceled(true);
             event.setCancellationResult(EnumActionResult.SUCCESS);
             player.swingArm(event.getHand());
@@ -101,10 +104,12 @@ public final class TomeLearningHandler {
             String blocker = findVillagerBlocker(villager);
             if (blocker != null) {
                 refuse(player, villager, held, blocker);
+            } else if (delivering) {
+                SlotRequests.deliver(player, villager, held, tomes);
             } else if (banking) {
                 bankCatalyst(player, villager, held, tomes);
             } else {
-                reportChance(player, tomes);
+                reportChance(player, villager, tomes);
             }
             return;
         }
@@ -173,6 +178,12 @@ public final class TomeLearningHandler {
         Map.Entry<Enchantment, Integer> top = offered.entrySet().iterator().next();
         attempt.put(top.getKey(), top.getValue());
 
+        String locked = SlotRequests.checkSlotAvailable(player, villager, tomes);
+        if (locked != null) {
+            refuse(player, villager, held, locked);
+            return;
+        }
+
         Plan plan = plan(attempt, tomes);
         if (plan.refusal != null) {
             refuse(player, villager, held, plan.refusal);
@@ -185,7 +196,7 @@ public final class TomeLearningHandler {
         ResourceLocation gambledOn = plan.primaryEnchantment();
         if (ModConfig.ENABLE_CHANCE && !player.capabilities.isCreativeMode) {
             float chance = ModConfig.getTotalChance(
-                    tomes.count(), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
+                    SlotRequests.chanceSlots(tomes), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
 
             if (villager.world.rand.nextFloat() * 100.0F >= chance) {
                 failAttempt(player, villager, held, tomes, gambledOn,
@@ -223,7 +234,7 @@ public final class TomeLearningHandler {
         // deposit is not about any particular book.
         // Compared against the preparation ceiling, not the absolute one: pity can push a
         // villager past 80% but it is not something a catalyst can add to.
-        float current = ModConfig.getPreparedChance(tomes.count(), tomes.getBankedChance());
+        float current = ModConfig.getPreparedChance(SlotRequests.chanceSlots(tomes), tomes.getBankedChance());
         if (current >= ModConfig.MAX_SUCCESS_CHANCE) {
             refuse(player, villager, held, "This villager is already at the maximum "
                     + percent(ModConfig.MAX_SUCCESS_CHANCE) + " chance - keep that for another.");
@@ -245,7 +256,8 @@ public final class TomeLearningHandler {
         spawnParticles(villager, EnumParticleTypes.VILLAGER_HAPPY);
 
         if (ModConfig.ANNOUNCE_LEARNED) {
-            float now = ModConfig.getTotalChance(tomes.count(), 0.0F, tomes.getBankedChance());
+            float now = ModConfig.getTotalChance(SlotRequests.chanceSlots(tomes), 0.0F,
+                    tomes.getBankedChance());
             ITextComponent message = new TextComponentString(PREFIX + TextFormatting.GREEN
                     + "Banked ");
             message.appendSibling(banked);
@@ -261,7 +273,8 @@ public final class TomeLearningHandler {
     }
 
     /** Answers the empty-handed sneak-click: where this villager currently stands. */
-    private static void reportChance(EntityPlayer player, ITomeKnowledge tomes) {
+    private static void reportChance(EntityPlayer player, EntityVillager villager,
+                                     ITomeKnowledge tomes) {
         float banked = tomes.getBankedChance();
         int filled = tomes.count();
         int remaining = Math.max(0, ModConfig.MAX_TOMES_PER_VILLAGER - filled);
@@ -286,7 +299,7 @@ public final class TomeLearningHandler {
      * have no tome to hang a line off.
      */
     private static void sendBonusLines(EntityPlayer player, ITomeKnowledge tomes) {
-        int filled = tomes.count();
+        int filled = SlotRequests.chanceSlots(tomes);
         float banked = tomes.getBankedChance();
         for (Map.Entry<ResourceLocation, Float> owed : tomes.pityView().entrySet()) {
             if (owed.getValue().floatValue() <= 0.0F) {
@@ -360,7 +373,7 @@ public final class TomeLearningHandler {
 
         if (ModConfig.ANNOUNCE_REJECTED) {
             float next = ModConfig.getTotalChance(
-                    tomes.count(), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
+                    SlotRequests.chanceSlots(tomes), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
             player.sendMessage(new TextComponentString(PREFIX + TextFormatting.RED
                     + "The binding failed at " + percent(chance) + "."
                     + TextFormatting.GRAY + " Next attempt at that enchantment here: "

@@ -1,6 +1,7 @@
 package com.exiledradio.rlcraftvillagertomes.capability;
 
 import com.exiledradio.rlcraftvillagertomes.RLCraftVillagerTomes;
+import com.exiledradio.rlcraftvillagertomes.bounty.BountyItem;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.nbt.NBTBase;
@@ -16,6 +17,8 @@ import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -49,6 +52,11 @@ public final class CapabilityTomeKnowledge {
     private static final String TAG_BANKED = "Banked";
     private static final String TAG_FAILURES = "Fails";
     private static final String TAG_OWED = "n";
+    private static final String TAG_SLOTS = "Slots";
+    private static final String TAG_REQUEST = "Want";
+    private static final String TAG_META = "m";
+    private static final String TAG_NEED = "need";
+    private static final String TAG_GOT = "got";
 
     private CapabilityTomeKnowledge() {
     }
@@ -122,6 +130,18 @@ public final class CapabilityTomeKnowledge {
                 }
                 root.setTag(TAG_FAILURES, fails);
             }
+
+            root.setInteger(TAG_SLOTS, instance.getUnlockedSlots());
+            NBTTagList want = new NBTTagList();
+            for (BountyItem line : instance.getRequest()) {
+                NBTTagCompound tag = new NBTTagCompound();
+                tag.setString(TAG_ID, line.getItemName().toString());
+                tag.setInteger(TAG_META, line.getMeta());
+                tag.setInteger(TAG_NEED, line.getRequired());
+                tag.setInteger(TAG_GOT, line.getDelivered());
+                want.appendTag(tag);
+            }
+            root.setTag(TAG_REQUEST, want);
             return root;
         }
 
@@ -167,6 +187,28 @@ public final class CapabilityTomeKnowledge {
                     }
                 }
             }
+
+            // Villagers taught before slots could lock have no Slots tag. Treating them as
+            // having unlocked exactly what they have filled - and at least one - means an
+            // established villager keeps working and simply owes a bounty for its next slot,
+            // rather than waking up locked out of trades it already sells.
+            if (root.hasKey(TAG_SLOTS)) {
+                instance.setUnlockedSlots(root.getInteger(TAG_SLOTS));
+            } else {
+                instance.setUnlockedSlots(Math.max(1, instance.count()));
+            }
+
+            NBTTagList want = root.getTagList(TAG_REQUEST, 10);
+            List<BountyItem> request = new ArrayList<BountyItem>();
+            for (int i = 0; i < want.tagCount(); i++) {
+                NBTTagCompound tag = want.getCompoundTagAt(i);
+                String id = tag.getString(TAG_ID);
+                if (id != null && !id.isEmpty()) {
+                    request.add(new BountyItem(new ResourceLocation(id), tag.getInteger(TAG_META),
+                            tag.getInteger(TAG_NEED), tag.getInteger(TAG_GOT)));
+                }
+            }
+            instance.setRequest(request);
         }
     }
 

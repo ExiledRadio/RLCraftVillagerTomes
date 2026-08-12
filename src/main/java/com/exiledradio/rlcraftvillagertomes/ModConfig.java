@@ -48,10 +48,12 @@ public class ModConfig {
     public static final String CATEGORY_CATALYSTS = "catalysts";
     /** Whether teaching succeeds at all, and what moves the odds. */
     public static final String CATEGORY_CHANCE = "chance";
+    /** What a villager demands before it opens another slot. */
+    public static final String CATEGORY_SLOTS = "slots";
 
     /** Display order in the config screen. Without this the GUI sorts alphabetically. */
     private static final String[] CATEGORIES = {
-            CATEGORY_LEARNING, CATEGORY_CHANCE, CATEGORY_UPGRADING, CATEGORY_PRICING,
+            CATEGORY_LEARNING, CATEGORY_SLOTS, CATEGORY_CHANCE, CATEGORY_UPGRADING, CATEGORY_PRICING,
             CATEGORY_CATALYSTS, CATEGORY_FEEDBACK,
     };
 
@@ -70,6 +72,10 @@ public class ModConfig {
             "COST_MULTIPLIER_VERY_RARE", "TREASURE_COST_MULTIPLIER",
             "EXTRA_INPUT_ITEM", "EXTRA_INPUT_COUNT", "MAX_TRADE_USES",
             "NEVER_LOCK_TAUGHT_TRADES", "NEVER_LOCK_ANY_TRADE", "TRADE_GRANTS_XP");
+
+    private static final List<String> ORDER_SLOTS = Arrays.asList(
+            "LOCK_SLOTS", "REQUEST_ITEMS_BASE", "REQUEST_ITEMS_PER_SLOT", "REQUEST_ITEMS_MAX",
+            "REQUEST_TIERS_BASE", "REQUEST_TIERS_PER_SLOT");
 
     private static final List<String> ORDER_CHANCE = Arrays.asList(
             "ENABLE_CHANCE", "BASE_SUCCESS_CHANCE", "CHANCE_PER_SLOT", "MAX_SUCCESS_CHANCE",
@@ -120,6 +126,7 @@ public class ModConfig {
         for (String key : ORDER_LEARNING) CATEGORY_OF_KEY.put(key, CATEGORY_LEARNING);
         for (String key : ORDER_UPGRADING) CATEGORY_OF_KEY.put(key, CATEGORY_UPGRADING);
         for (String key : ORDER_PRICING) CATEGORY_OF_KEY.put(key, CATEGORY_PRICING);
+        for (String key : ORDER_SLOTS) CATEGORY_OF_KEY.put(key, CATEGORY_SLOTS);
         for (String key : ORDER_CHANCE) CATEGORY_OF_KEY.put(key, CATEGORY_CHANCE);
         for (String key : ORDER_CATALYSTS) CATEGORY_OF_KEY.put(key, CATEGORY_CATALYSTS);
         for (String key : ORDER_FEEDBACK) CATEGORY_OF_KEY.put(key, CATEGORY_FEEDBACK);
@@ -163,6 +170,14 @@ public class ModConfig {
     public static boolean NEVER_LOCK_ANY_TRADE = false;
     public static boolean TRADE_GRANTS_XP = true;
 
+    // slots
+    public static boolean LOCK_SLOTS = true;
+    public static int REQUEST_ITEMS_BASE = 2;
+    public static int REQUEST_ITEMS_PER_SLOT = 1;
+    public static int REQUEST_ITEMS_MAX = 6;
+    public static int REQUEST_TIERS_BASE = 2;
+    public static int REQUEST_TIERS_PER_SLOT = 1;
+
     // chance
     public static boolean ENABLE_CHANCE = true;
     public static float BASE_SUCCESS_CHANCE = 30.0F;
@@ -184,8 +199,33 @@ public class ModConfig {
             "mythic=30.0,1-1",
     };
     public static String[] CATALYST_ITEMS = {
+            // Lowest tier - the stuff you have stacks of.
+            "minecraft:coal:0=common",
+            "minecraft:redstone=common",
+            "minecraft:glowstone_dust=common",
+            "minecraft:blaze_powder=common",
+            "minecraft:iron_ingot=common",
+            "minecraft:gold_ingot=common",
+            "iceandfire:copper_ingot=common",
             "xat:glowing_powder=common",
+            "minecraft:emerald=uncommon",
+            "minecraft:diamond=uncommon",
+            // Mid tier.
+            "minecraft:blaze_rod=rare",
+            "scalinghealth:crystalshard=rare",
+            "iceandfire:dragonbone=rare",
             "xat:glowing_ingot=rare",
+            // Block forms of the lesser materials - nine of something in one slot.
+            "minecraft:coal_block=epic",
+            "minecraft:redstone_block=epic",
+            "minecraft:glowstone=epic",
+            "minecraft:iron_block=epic",
+            "minecraft:gold_block=epic",
+            "minecraft:diamond_block=legendary",
+            "minecraft:emerald_block=legendary",
+            // Highest tier.
+            "iceandfire:dragon_skull=epic",
+            "charm:charged_emerald=legendary",
             "xat:glowing_gem=mythic",
     };
 
@@ -237,6 +277,7 @@ public class ModConfig {
         pruneUnknownKeys();
 
         loadLearning();
+        loadSlots();
         loadChance();
         loadUpgrading();
         loadPricing();
@@ -798,6 +839,76 @@ public class ModConfig {
         );
     }
 
+    // ------------------------------------------------------------------- slots
+
+    private static final String SLOTS_COMMENT =
+            "What a villager demands before it will hold another book.\n"
+                    + "\n"
+                    + "No slot is free. Each villager rolls its own list of items - drawn from the\n"
+                    + "same tier list the catalysts use - and wants all of it delivered before it\n"
+                    + "opens up. Requests get longer and richer with every slot.\n"
+                    + "\n"
+                    + "A request is NEVER re-rolled. If a villager asks for something you cannot\n"
+                    + "get, the answer is a different villager, not another click. That is what\n"
+                    + "makes the ones you have already paid into worth protecting.";
+
+    private static final String LOCK_SLOTS_COMMENT =
+            "If true (default), villagers start with nothing and every slot must be bought\n"
+                    + "with a delivered request.\n"
+                    + "\n"
+                    + "Set to false and every villager simply has MAX_TOMES_PER_VILLAGER slots open\n"
+                    + "from the start, which is how the mod behaved before requests existed.\n"
+                    + "Villagers that already unlocked slots keep them either way.";
+
+    private static final String REQUEST_ITEMS_PER_SLOT_COMMENT =
+            "How many more items each slot asks for than the one before it.\n"
+                    + "With the defaults a villager wants 2 items for its first slot and 6 for its\n"
+                    + "fifth.";
+
+    private static final String REQUEST_ITEMS_MAX_COMMENT =
+            "The most items any single request will ever list, however deep you go.\n"
+                    + "A request longer than this stops being a goal and starts being a chore.";
+
+    private static final String REQUEST_TIERS_BASE_COMMENT =
+            "How many tiers, counting up from the cheapest, the FIRST slot may draw from.\n"
+                    + "2 keeps an opening request to the bottom two bands, so nobody is asked for a\n"
+                    + "dragon skull before they have taught a single book.";
+
+    private static final String REQUEST_TIERS_PER_SLOT_COMMENT =
+            "How many more tiers each slot unlocks access to.\n"
+                    + "\n"
+                    + "The cheapest tier always stays in the pool, so a late request mixes the\n"
+                    + "expensive with the ordinary rather than being a solid wall of legendary\n"
+                    + "items. Ordering in CATALYST_TIERS is the ranking - cheapest first.";
+
+    private static void loadSlots() {
+        config.setCategoryComment(CATEGORY_SLOTS, SLOTS_COMMENT);
+        config.setCategoryPropertyOrder(CATEGORY_SLOTS, mutableOrder(ORDER_SLOTS));
+
+        LOCK_SLOTS = config.getBoolean(
+                "LOCK_SLOTS", CATEGORY_SLOTS, true, LOCK_SLOTS_COMMENT);
+
+        REQUEST_ITEMS_BASE = config.getInt(
+                "REQUEST_ITEMS_BASE", CATEGORY_SLOTS, 2, 1, 16,
+                "How many different items the FIRST slot asks for.");
+
+        REQUEST_ITEMS_PER_SLOT = config.getInt(
+                "REQUEST_ITEMS_PER_SLOT", CATEGORY_SLOTS, 1, 0, 8,
+                REQUEST_ITEMS_PER_SLOT_COMMENT);
+
+        REQUEST_ITEMS_MAX = config.getInt(
+                "REQUEST_ITEMS_MAX", CATEGORY_SLOTS, 6, 1, 16,
+                REQUEST_ITEMS_MAX_COMMENT);
+
+        REQUEST_TIERS_BASE = config.getInt(
+                "REQUEST_TIERS_BASE", CATEGORY_SLOTS, 2, 1, 16,
+                REQUEST_TIERS_BASE_COMMENT);
+
+        REQUEST_TIERS_PER_SLOT = config.getInt(
+                "REQUEST_TIERS_PER_SLOT", CATEGORY_SLOTS, 1, 0, 8,
+                REQUEST_TIERS_PER_SLOT_COMMENT);
+    }
+
     // ------------------------------------------------------------------ chance
 
     private static void loadChance() {
@@ -1057,6 +1168,11 @@ public class ModConfig {
         if (MAX_SUCCESS_CHANCE > 100.0F) MAX_SUCCESS_CHANCE = 100.0F;
         if (MIN_SUCCESS_CHANCE > MAX_SUCCESS_CHANCE) MIN_SUCCESS_CHANCE = MAX_SUCCESS_CHANCE;
         if (MIN_SUCCESS_CHANCE < 0.0F) MIN_SUCCESS_CHANCE = 0.0F;
+        if (REQUEST_ITEMS_BASE < 1) REQUEST_ITEMS_BASE = 1;
+        if (REQUEST_ITEMS_PER_SLOT < 0) REQUEST_ITEMS_PER_SLOT = 0;
+        if (REQUEST_ITEMS_MAX < REQUEST_ITEMS_BASE) REQUEST_ITEMS_MAX = REQUEST_ITEMS_BASE;
+        if (REQUEST_TIERS_BASE < 1) REQUEST_TIERS_BASE = 1;
+        if (REQUEST_TIERS_PER_SLOT < 0) REQUEST_TIERS_PER_SLOT = 0;
         if (CHANCE_PER_SLOT < 0.0F) CHANCE_PER_SLOT = 0.0F;
         if (PITY_PER_BOOK_LEVEL < 0.0F) PITY_PER_BOOK_LEVEL = 0.0F;
         if (ABSOLUTE_MAX_CHANCE < MAX_SUCCESS_CHANCE) ABSOLUTE_MAX_CHANCE = MAX_SUCCESS_CHANCE;

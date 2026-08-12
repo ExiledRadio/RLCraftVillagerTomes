@@ -1,5 +1,6 @@
 package com.exiledradio.rlcraftvillagertomes.capability;
 
+import com.exiledradio.rlcraftvillagertomes.bounty.BountyItem;
 import net.minecraft.util.ResourceLocation;
 
 import java.util.List;
@@ -112,4 +113,31 @@ public interface ITomeKnowledge {
 
     /** Read-only view of everything owed, keyed by enchantment. Never null. */
     Map<ResourceLocation, Float> pityView();
+
+    // ------------------------------------------------------------------- slots
+
+    /**
+     * How many slots this villager has opened. Nothing can be taught until at least one is.
+     *
+     * <p>Distinct from {@link #count()}, which is how many are in use. A villager with two
+     * unlocked and two filled has nowhere to put a third book until it is paid for again.
+     */
+    int getUnlockedSlots();
+
+    /** Opens another slot. */
+    void unlockSlot();
+
+    /** Used by storage and by the migration for villagers taught before slots locked. */
+    void setUnlockedSlots(int slots);
+
+    /**
+     * What this villager is demanding before it opens its next slot, or an empty list when
+     * it has not been asked yet.
+     *
+     * <p>Live: delivering into it mutates these entries. Never re-rolled once set.
+     */
+    List<BountyItem> getRequest();
+
+    /** Replaces the outstanding demand. Passing an empty list clears it. */
+    void setRequest(List<BountyItem> request);
 }

@@ -1,5 +1,6 @@
 package com.exiledradio.rlcraftvillagertomes.capability;
 
+import com.exiledradio.rlcraftvillagertomes.bounty.BountyItem;
 import net.minecraft.util.ResourceLocation;
 
 import java.util.ArrayList;
@@ -106,6 +107,8 @@ public class TomeKnowledge implements ITomeKnowledge {
         tomes.clear();
         bankedChance = 0.0F;
         pity.clear();
+        unlockedSlots = 0;
+        request.clear();
     }
 
     // ------------------------------------------------------------------ chance
@@ -165,6 +168,40 @@ public class TomeKnowledge implements ITomeKnowledge {
     /** Used by storage when loading. */
     public void setBankedChance(float percent) {
         bankedChance = Math.max(0.0F, percent);
+    }
+
+    // ------------------------------------------------------------------- slots
+
+    private int unlockedSlots;
+
+    private final List<BountyItem> request = new ArrayList<BountyItem>();
+
+    @Override
+    public int getUnlockedSlots() {
+        return unlockedSlots;
+    }
+
+    @Override
+    public void unlockSlot() {
+        unlockedSlots++;
+    }
+
+    @Override
+    public void setUnlockedSlots(int slots) {
+        unlockedSlots = Math.max(0, slots);
+    }
+
+    @Override
+    public List<BountyItem> getRequest() {
+        return request;
+    }
+
+    @Override
+    public void setRequest(List<BountyItem> lines) {
+        request.clear();
+        if (lines != null) {
+            request.addAll(lines);
+        }
     }
 
     @Override
