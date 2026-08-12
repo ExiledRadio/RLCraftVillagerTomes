@@ -3,6 +3,7 @@ package com.exiledradio.rlcraftvillagertomes.capability;
 import net.minecraft.util.ResourceLocation;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Everything one villager has been taught, as an ordered list of {@link Tome}s.
@@ -92,16 +93,23 @@ public interface ITomeKnowledge {
     void clearBankedChance();
 
     /**
-     * How many times an attempt at this enchantment has failed on this villager.
+     * Percentage points this villager owes on a given enchantment after past failures.
      *
      * <p>Per villager and per enchantment: failing Mending here makes Mending easier here,
      * and says nothing about Unbreaking or about the librarian next door.
+     *
+     * <p>Stored as accumulated points rather than a failure count because what a failure is
+     * worth depends on the book that burned - losing a Sharpness V hurts five times as much
+     * as losing a Sharpness I, and is compensated accordingly.
      */
-    int getFailures(ResourceLocation enchantment);
+    float getPityBonus(ResourceLocation enchantment);
 
-    /** Records a failure, raising the floor for the next attempt at that enchantment. */
-    void recordFailure(ResourceLocation enchantment);
+    /** Adds to what is owed, raising the floor for the next attempt at that enchantment. */
+    void addPityBonus(ResourceLocation enchantment, float percent);
 
-    /** Forgets the failures for an enchantment, which is what a success does. */
-    void clearFailures(ResourceLocation enchantment);
+    /** Clears what is owed on an enchantment, which is what a success does. */
+    void clearPity(ResourceLocation enchantment);
+
+    /** Read-only view of everything owed, keyed by enchantment. Never null. */
+    Map<ResourceLocation, Float> pityView();
 }

@@ -184,13 +184,14 @@ public final class TomeLearningHandler {
         ResourceLocation gambledOn = plan.primaryEnchantment();
         if (ModConfig.ENABLE_CHANCE && !player.capabilities.isCreativeMode) {
             float chance = ModConfig.getTotalChance(
-                    tomes.count(), tomes.getFailures(gambledOn), tomes.getBankedChance());
+                    tomes.count(), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
 
             if (villager.world.rand.nextFloat() * 100.0F >= chance) {
-                failAttempt(player, villager, held, tomes, gambledOn, chance);
+                failAttempt(player, villager, held, tomes, gambledOn,
+                        top.getValue().intValue(), chance);
                 return;
             }
-            tomes.clearFailures(gambledOn);
+            tomes.clearPity(gambledOn);
         }
 
         apply(plan, tomes);
@@ -219,7 +220,7 @@ public final class TomeLearningHandler {
 
         // Measured against the floor with no pity, because pity is per enchantment and this
         // deposit is not about any particular book.
-        float current = ModConfig.getTotalChance(tomes.count(), 0, tomes.getBankedChance());
+        float current = ModConfig.getTotalChance(tomes.count(), 0.0F, tomes.getBankedChance());
         if (current >= ModConfig.MAX_SUCCESS_CHANCE) {
             refuse(player, villager, held, "This villager is already at the maximum "
                     + percent(ModConfig.MAX_SUCCESS_CHANCE) + " chance - keep that for another.");
@@ -237,7 +238,7 @@ public final class TomeLearningHandler {
         spawnParticles(villager, EnumParticleTypes.VILLAGER_HAPPY);
 
         if (ModConfig.ANNOUNCE_LEARNED) {
-            float now = ModConfig.getTotalChance(tomes.count(), 0, tomes.getBankedChance());
+            float now = ModConfig.getTotalChance(tomes.count(), 0.0F, tomes.getBankedChance());
             ITextComponent message = new TextComponentString(PREFIX + TextFormatting.GREEN
                     + "Banked ");
             message.appendSibling(held.getTextComponent());
@@ -256,21 +257,24 @@ public final class TomeLearningHandler {
         float total = ModConfig.getTotalChance(filled, 0, banked);
 
         player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
-                + "Current chance of success: " + TextFormatting.WHITE + percent(total)
-                + TextFormatting.GRAY + " (" + remaining + " slot"
-                + (remaining == 1 ? "" : "s") + " remaining)"));
+                + "Success: " + TextFormatting.WHITE + percent(total)
+                + TextFormatting.GRAY + " - " + remaining + " slot"
+                + (remaining == 1 ? "" : "s") + " left"));
 
-        // Pity is per enchantment, so it cannot be folded into the headline number - but
-        // hiding it entirely would leave a player wondering why a book they have failed
-        // four times suddenly reads better than the summary said.
-        for (Tome tome : tomes.view()) {
-            int failures = tomes.getFailures(tome.getEnchantment());
-            if (failures > 0) {
-                player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  "
-                        + tome.getEnchantment() + " has failed " + failures + "x here - "
-                        + percent(ModConfig.getTotalChance(filled, failures, banked))
-                        + " for that one"));
+        // Pity is per enchantment, so it cannot be folded into the headline number. Shown
+        // as the bonus itself rather than a failure count: what a player needs to know is
+        // that Mending reads better here, not the bookkeeping behind it. Iterating what is
+        // owed rather than what is known also catches enchantments failed but never landed,
+        // which have no tome to hang a line off.
+        for (Map.Entry<ResourceLocation, Float> owed : tomes.pityView().entrySet()) {
+            if (owed.getValue().floatValue() <= 0.0F) {
+                continue;
             }
+            Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(owed.getKey());
+            String name = enchantment == null
+                    ? String.valueOf(owed.getKey()) : plainName(enchantment);
+            player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  " + name
+                    + " +" + percent(owed.getValue().floatValue())));
         }
     }
 
@@ -310,7 +314,7 @@ public final class TomeLearningHandler {
     /** A lost roll: the book burns, the bank empties, and the floor rises a little. */
     private static void failAttempt(EntityPlayer player, EntityVillager villager, ItemStack held,
                                     ITomeKnowledge tomes, ResourceLocation gambledOn,
-                                    float chance) {
+                                    int bookLevel, float chance) {
         if (ModConfig.CONSUME_BOOK_ON_FAILURE) {
             // Only the enchantment that was gambled on burns. The rest of a multi-enchantment
             // book survives to be attempted separately.
@@ -319,7 +323,9 @@ public final class TomeLearningHandler {
         if (ModConfig.CONSUME_CATALYSTS_ON_FAILURE) {
             tomes.clearBankedChance();
         }
-        tomes.recordFailure(gambledOn);
+        // Scaled by the level that burned: a Sharpness V is five times the loss of a
+        // Sharpness I, so it buys five times the consolation.
+        tomes.addPityBonus(gambledOn, ModConfig.PITY_PER_BOOK_LEVEL * Math.max(1, bookLevel));
 
         if (ModConfig.PLAY_SOUNDS) {
             villager.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.0F, 1.0F);
@@ -329,7 +335,7 @@ public final class TomeLearningHandler {
 
         if (ModConfig.ANNOUNCE_REJECTED) {
             float next = ModConfig.getTotalChance(
-                    tomes.count(), tomes.getFailures(gambledOn), tomes.getBankedChance());
+                    tomes.count(), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
             player.sendMessage(new TextComponentString(PREFIX + TextFormatting.RED
                     + "The binding failed at " + percent(chance) + "."
                     + TextFormatting.GRAY + " Next attempt at that enchantment here: "

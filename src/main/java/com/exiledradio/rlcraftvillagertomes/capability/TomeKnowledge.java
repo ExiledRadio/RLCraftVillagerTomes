@@ -105,15 +105,15 @@ public class TomeKnowledge implements ITomeKnowledge {
     public void clear() {
         tomes.clear();
         bankedChance = 0.0F;
-        failures.clear();
+        pity.clear();
     }
 
     // ------------------------------------------------------------------ chance
 
     private float bankedChance;
 
-    private final Map<ResourceLocation, Integer> failures =
-            new LinkedHashMap<ResourceLocation, Integer>();
+    private final Map<ResourceLocation, Float> pity =
+            new LinkedHashMap<ResourceLocation, Float>();
 
     @Override
     public float getBankedChance() {
@@ -133,32 +133,32 @@ public class TomeKnowledge implements ITomeKnowledge {
     }
 
     @Override
-    public int getFailures(ResourceLocation enchantment) {
-        Integer count = failures.get(enchantment);
-        return count == null ? 0 : count.intValue();
+    public float getPityBonus(ResourceLocation enchantment) {
+        Float owed = pity.get(enchantment);
+        return owed == null ? 0.0F : owed.floatValue();
     }
 
     @Override
-    public void recordFailure(ResourceLocation enchantment) {
-        if (enchantment != null) {
-            failures.put(enchantment, Integer.valueOf(getFailures(enchantment) + 1));
+    public void addPityBonus(ResourceLocation enchantment, float percent) {
+        if (enchantment != null && percent > 0.0F) {
+            pity.put(enchantment, Float.valueOf(getPityBonus(enchantment) + percent));
         }
     }
 
     @Override
-    public void clearFailures(ResourceLocation enchantment) {
-        failures.remove(enchantment);
+    public void clearPity(ResourceLocation enchantment) {
+        pity.remove(enchantment);
     }
 
-    /** Read-only view of the failure counts, for storage and the admin command. */
-    public Map<ResourceLocation, Integer> failureView() {
-        return Collections.unmodifiableMap(failures);
+    @Override
+    public Map<ResourceLocation, Float> pityView() {
+        return Collections.unmodifiableMap(pity);
     }
 
-    /** Used by storage when loading; bypasses the increment-by-one of recordFailure. */
-    public void setFailures(ResourceLocation enchantment, int count) {
-        if (enchantment != null && count > 0) {
-            failures.put(enchantment, Integer.valueOf(count));
+    /** Used by storage when loading; sets rather than accumulates. */
+    public void setPityBonus(ResourceLocation enchantment, float percent) {
+        if (enchantment != null && percent > 0.0F) {
+            pity.put(enchantment, Float.valueOf(percent));
         }
     }
 

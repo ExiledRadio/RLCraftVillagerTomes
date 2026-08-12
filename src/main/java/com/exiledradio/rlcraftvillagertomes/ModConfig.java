@@ -74,7 +74,7 @@ public class ModConfig {
     private static final List<String> ORDER_CHANCE = Arrays.asList(
             "ENABLE_CHANCE", "BASE_SUCCESS_CHANCE", "CHANCE_PER_SLOT", "MAX_SUCCESS_CHANCE",
             "MIN_SUCCESS_CHANCE",
-            "PITY_PER_FAILURE", "PITY_CAP", "CONSUME_BOOK_ON_FAILURE",
+            "PITY_PER_BOOK_LEVEL", "PITY_CAP", "CONSUME_BOOK_ON_FAILURE",
             "CONSUME_CATALYSTS_ON_FAILURE");
 
     private static final List<String> ORDER_CATALYSTS = Arrays.asList(
@@ -169,7 +169,7 @@ public class ModConfig {
     public static float CHANCE_PER_SLOT = 10.0F;
     public static float MAX_SUCCESS_CHANCE = 80.0F;
     public static float MIN_SUCCESS_CHANCE = 1.0F;
-    public static float PITY_PER_FAILURE = 5.0F;
+    public static float PITY_PER_BOOK_LEVEL = 5.0F;
     public static float PITY_CAP = 70.0F;
     public static boolean CONSUME_BOOK_ON_FAILURE = true;
     public static boolean CONSUME_CATALYSTS_ON_FAILURE = true;
@@ -846,10 +846,15 @@ public class ModConfig {
                         + "misconfigured base cannot make books impossible to teach."
         );
 
-        PITY_PER_FAILURE = config.getFloat(
-                "PITY_PER_FAILURE", CATEGORY_CHANCE, 5.0F, 0.0F, 100.0F,
-                "How many percentage points the floor rises each time an attempt fails, for\n"
-                        + "that enchantment on that villager.\n"
+        PITY_PER_BOOK_LEVEL = config.getFloat(
+                "PITY_PER_BOOK_LEVEL", CATEGORY_CHANCE, 5.0F, 0.0F, 100.0F,
+                "How many percentage points a failure is worth, PER LEVEL of the book that\n"
+                        + "burned, for that enchantment on that villager.\n"
+                        + "\n"
+                        + "At the default of 5, losing a Sharpness V raises the floor by 25 while\n"
+                        + "losing a Sharpness I raises it by 5. Scaling by level keeps the\n"
+                        + "compensation proportional to what was actually lost - a level V book is\n"
+                        + "five times the investment, so it buys five times the consolation.\n"
                         + "\n"
                         + "Tracked per villager AND per enchantment, so failing Mending on one\n"
                         + "librarian makes Mending easier on that librarian only - not Unbreaking,\n"
@@ -857,8 +862,8 @@ public class ModConfig {
                         + "off, which is the same thing the permanently locked slots are asking of\n"
                         + "you.\n"
                         + "\n"
-                        + "Success clears the count. Set to 0 to remove the mercy rule entirely and\n"
-                        + "let bad luck run forever."
+                        + "Success wipes what is owed on that enchantment. Set to 0 to remove the\n"
+                        + "mercy rule entirely and let bad luck run forever."
         );
 
         PITY_CAP = config.getFloat(
@@ -1020,7 +1025,7 @@ public class ModConfig {
         if (MIN_SUCCESS_CHANCE > MAX_SUCCESS_CHANCE) MIN_SUCCESS_CHANCE = MAX_SUCCESS_CHANCE;
         if (MIN_SUCCESS_CHANCE < 0.0F) MIN_SUCCESS_CHANCE = 0.0F;
         if (CHANCE_PER_SLOT < 0.0F) CHANCE_PER_SLOT = 0.0F;
-        if (PITY_PER_FAILURE < 0.0F) PITY_PER_FAILURE = 0.0F;
+        if (PITY_PER_BOOK_LEVEL < 0.0F) PITY_PER_BOOK_LEVEL = 0.0F;
         if (PITY_CAP < BASE_SUCCESS_CHANCE) PITY_CAP = BASE_SUCCESS_CHANCE;
         if (PITY_CAP > 100.0F) PITY_CAP = 100.0F;
 
@@ -1178,9 +1183,9 @@ public class ModConfig {
      * {@link #PITY_CAP}. Deliberately separate from the banked half so both the chat readout
      * and the roll can be built from the same two pieces and cannot disagree.
      */
-    public static float getFloorChance(int slotsFilled, int failures) {
+    public static float getFloorChance(int slotsFilled, float pity) {
         float base = getBaseChance(slotsFilled);
-        float floor = base + Math.max(0, failures) * PITY_PER_FAILURE;
+        float floor = base + Math.max(0.0F, pity);
         return Math.min(floor, Math.max(base, PITY_CAP));
     }
 
@@ -1190,8 +1195,8 @@ public class ModConfig {
     }
 
     /** The final odds of an attempt: floor plus banked catalysts, clamped to the limits. */
-    public static float getTotalChance(int slotsFilled, int failures, float banked) {
-        float total = getFloorChance(slotsFilled, failures) + Math.max(0.0F, banked);
+    public static float getTotalChance(int slotsFilled, float pity, float banked) {
+        float total = getFloorChance(slotsFilled, pity) + Math.max(0.0F, banked);
         if (total > MAX_SUCCESS_CHANCE) total = MAX_SUCCESS_CHANCE;
         if (total < MIN_SUCCESS_CHANCE) total = MIN_SUCCESS_CHANCE;
         return total;

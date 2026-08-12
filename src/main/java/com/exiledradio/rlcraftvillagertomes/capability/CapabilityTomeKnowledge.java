@@ -48,7 +48,7 @@ public final class CapabilityTomeKnowledge {
     private static final String TAG_LEVEL = "lvl";
     private static final String TAG_BANKED = "Banked";
     private static final String TAG_FAILURES = "Fails";
-    private static final String TAG_COUNT = "n";
+    private static final String TAG_OWED = "n";
 
     private CapabilityTomeKnowledge() {
     }
@@ -113,11 +113,11 @@ public final class CapabilityTomeKnowledge {
 
             if (instance instanceof TomeKnowledge) {
                 NBTTagList fails = new NBTTagList();
-                for (Map.Entry<ResourceLocation, Integer> entry
-                        : ((TomeKnowledge) instance).failureView().entrySet()) {
+                for (Map.Entry<ResourceLocation, Float> entry
+                        : instance.pityView().entrySet()) {
                     NBTTagCompound tag = new NBTTagCompound();
                     tag.setString(TAG_ID, entry.getKey().toString());
-                    tag.setInteger(TAG_COUNT, entry.getValue().intValue());
+                    tag.setFloat(TAG_OWED, entry.getValue().floatValue());
                     fails.appendTag(tag);
                 }
                 root.setTag(TAG_FAILURES, fails);
@@ -162,8 +162,8 @@ public final class CapabilityTomeKnowledge {
                     NBTTagCompound tag = fails.getCompoundTagAt(i);
                     String id = tag.getString(TAG_ID);
                     if (id != null && !id.isEmpty()) {
-                        ((TomeKnowledge) instance).setFailures(
-                                new ResourceLocation(id), tag.getInteger(TAG_COUNT));
+                        ((TomeKnowledge) instance).setPityBonus(
+                                new ResourceLocation(id), tag.getFloat(TAG_OWED));
                     }
                 }
             }
