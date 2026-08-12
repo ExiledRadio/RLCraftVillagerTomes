@@ -230,6 +230,10 @@ public final class TomeLearningHandler {
             return;
         }
 
+        // Captured before the stack shrinks. Banking the last one in a stack empties it,
+        // and an emptied stack renders as "Air" in the message that follows.
+        ITextComponent banked = held.getTextComponent();
+
         tomes.addBankedChance(entry.getTier().getPercent());
         if (!player.capabilities.isCreativeMode) {
             held.shrink(1);
@@ -244,11 +248,15 @@ public final class TomeLearningHandler {
             float now = ModConfig.getTotalChance(tomes.count(), 0.0F, tomes.getBankedChance());
             ITextComponent message = new TextComponentString(PREFIX + TextFormatting.GREEN
                     + "Banked ");
-            message.appendSibling(held.getTextComponent());
+            message.appendSibling(banked);
             message.appendSibling(new TextComponentString(TextFormatting.GREEN + " (+"
                     + percent(entry.getTier().getPercent()) + "). "
                     + TextFormatting.GRAY + "Chance now " + percent(now) + "."));
             player.sendMessage(message);
+            // Repeated under every deposit so the numbers you are aiming at stay in front of
+            // you while you feed a villager, rather than needing an empty-handed click
+            // between each one to check whether you have already overshot.
+            sendBonusLines(player, tomes);
         }
     }
 
@@ -264,11 +272,22 @@ public final class TomeLearningHandler {
                 + TextFormatting.GRAY + " - " + remaining + " slot"
                 + (remaining == 1 ? "" : "s") + " left"));
 
-        // Pity is per enchantment, so it cannot be folded into the headline number. Shown
-        // as the bonus itself rather than a failure count: what a player needs to know is
-        // that Mending reads better here, not the bookkeeping behind it. Iterating what is
-        // owed rather than what is known also catches enchantments failed but never landed,
-        // which have no tome to hang a line off.
+        sendBonusLines(player, tomes);
+    }
+
+    /**
+     * One line per enchantment this villager owes something on, with the number that
+     * matters: the bonus and what it actually adds up to.
+     *
+     * <p>Pity is per enchantment, so it cannot be folded into the headline figure. Shown as
+     * the bonus rather than a failure count because what a player needs to know is that
+     * Mending reads better here, not the bookkeeping behind it. Iterating what is owed
+     * rather than what is known also catches enchantments failed but never landed, which
+     * have no tome to hang a line off.
+     */
+    private static void sendBonusLines(EntityPlayer player, ITomeKnowledge tomes) {
+        int filled = tomes.count();
+        float banked = tomes.getBankedChance();
         for (Map.Entry<ResourceLocation, Float> owed : tomes.pityView().entrySet()) {
             if (owed.getValue().floatValue() <= 0.0F) {
                 continue;
@@ -591,6 +610,11 @@ public final class TomeLearningHandler {
     }
 
     private static void spawnParticles(EntityVillager villager, EnumParticleTypes type) {
+        spawnParticles(villager, type, 8, 0.4D);
+    }
+
+    private static void spawnParticles(EntityVillager villager, EnumParticleTypes type,
+                                       int count, double spread) {
         if (!ModConfig.SPAWN_PARTICLES || !(villager.world instanceof WorldServer)) {
             return;
         }
@@ -598,7 +622,7 @@ public final class TomeLearningHandler {
         // clicked. The offsets scatter the puffs across the villager's own bounding box.
         ((WorldServer) villager.world).spawnParticle(type,
                 villager.posX, villager.posY + villager.height * 0.75D, villager.posZ,
-                8, 0.4D, 0.4D, 0.4D, 0.0D);
+                count, spread, spread, spread, 0.0D);
     }
 
     /**
