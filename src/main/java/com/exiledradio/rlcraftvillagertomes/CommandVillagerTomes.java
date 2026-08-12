@@ -3,6 +3,9 @@ package com.exiledradio.rlcraftvillagertomes;
 import com.exiledradio.rlcraftvillagertomes.capability.CapabilityTomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.Tome;
+import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystEntry;
+import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystRegistry;
+import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystTier;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -10,6 +13,7 @@ import net.minecraft.command.WrongUsageException;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -20,6 +24,7 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -54,7 +59,7 @@ public class CommandVillagerTomes extends CommandBase {
 
     @Override
     public String getUsage(ICommandSender sender) {
-        return "/villagertomes <list|teach|forget|clear> [enchantment] [level]";
+        return "/villagertomes <list|tiers|teach|forget|clear> [enchantment] [level]";
     }
 
     /** Zero so that unprivileged players can reach {@code list}. See {@link #checkAdmin}. */
@@ -78,6 +83,8 @@ public class CommandVillagerTomes extends CommandBase {
         String subCommand = args[0].toLowerCase(Locale.ROOT);
         if ("list".equals(subCommand)) {
             executeList(sender);
+        } else if ("tiers".equals(subCommand)) {
+            executeTiers(sender);
         } else if ("teach".equals(subCommand)) {
             executeTeach(server, sender, args);
         } else if ("forget".equals(subCommand)) {
@@ -113,6 +120,64 @@ public class CommandVillagerTomes extends CommandBase {
                 reply(sender, TextFormatting.WHITE + "  " + tome.getEnchantment() + " " + level
                         + TextFormatting.GRAY + " - "
                         + ModConfig.getEmeraldCost(enchantment, level) + " emerald(s)");
+            }
+        }
+    }
+
+    /**
+     * Dumps the parsed tier list, and identifies whatever the sender is holding.
+     *
+     * <p>This is the tool for filling the list in. Stand there with an item, run the
+     * command, and it tells you both the registry name to paste into the config and whether
+     * the entry you already wrote for it is being picked up.
+     */
+    private void executeTiers(ICommandSender sender) {
+        Collection<CatalystTier> tiers = CatalystRegistry.getTiers();
+        if (tiers.isEmpty()) {
+            reply(sender, TextFormatting.YELLOW + "No catalyst tiers are defined. See the "
+                    + "catalysts block in the config.");
+        } else {
+            reply(sender, TextFormatting.AQUA + "Tiers (" + tiers.size() + "):");
+            for (CatalystTier tier : tiers) {
+                reply(sender, TextFormatting.WHITE + "  " + tier.getName()
+                        + TextFormatting.GRAY + "  +" + tier.getPercent() + "%"
+                        + "  asks " + tier.getMinCount() + "-" + tier.getMaxCount()
+                        + "  (" + CatalystRegistry.getEntriesInTier(tier.getName()).size()
+                        + " item(s))");
+            }
+        }
+
+        List<CatalystEntry> entries = CatalystRegistry.getEntries();
+        if (!entries.isEmpty()) {
+            List<String> missing = CatalystRegistry.getUnresolved();
+            reply(sender, TextFormatting.AQUA + "Items (" + entries.size() + ", "
+                    + missing.size() + " not installed):");
+            for (CatalystEntry entry : entries) {
+                boolean found = !missing.contains(entry.describe());
+                reply(sender, (found ? TextFormatting.WHITE : TextFormatting.DARK_GRAY)
+                        + "  " + entry.describe() + " -> " + entry.getTier().getName()
+                        + (found ? "" : "  (not installed)"));
+            }
+        }
+
+        if (!CatalystRegistry.isResolved()) {
+            reply(sender, TextFormatting.YELLOW + "Items have not been resolved yet - this "
+                    + "should not happen once the game has finished loading.");
+        }
+
+        // The useful half: name whatever is in hand, so filling the config in does not mean
+        // guessing registry names or digging through jars.
+        if (sender instanceof EntityPlayer) {
+            ItemStack held = ((EntityPlayer) sender).getHeldItemMainhand();
+            if (!held.isEmpty()) {
+                CatalystEntry entry = CatalystRegistry.find(held);
+                String name = String.valueOf(held.getItem().getRegistryName());
+                reply(sender, TextFormatting.AQUA + "Held: " + TextFormatting.WHITE + name
+                        + ":" + held.getMetadata());
+                reply(sender, entry == null
+                        ? TextFormatting.GRAY + "  not a catalyst"
+                        : TextFormatting.GREEN + "  " + entry.getTier().getName() + "  +"
+                                + entry.getTier().getPercent() + "%");
             }
         }
     }
@@ -261,7 +326,7 @@ public class CommandVillagerTomes extends CommandBase {
     public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
                                           String[] args, net.minecraft.util.math.BlockPos pos) {
         if (args.length == 1) {
-            return getListOfStringsMatchingLastWord(args, "list", "teach", "forget", "clear");
+            return getListOfStringsMatchingLastWord(args, "list", "tiers", "teach", "forget", "clear");
         }
         if (args.length == 2 && ("teach".equals(args[0]) || "forget".equals(args[0]))) {
             List<String> names = new ArrayList<String>();

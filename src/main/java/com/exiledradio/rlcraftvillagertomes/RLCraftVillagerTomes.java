@@ -1,8 +1,10 @@
 package com.exiledradio.rlcraftvillagertomes;
 
 import com.exiledradio.rlcraftvillagertomes.capability.CapabilityTomeKnowledge;
+import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
+import net.minecraftforge.fml.common.event.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.apache.logging.log4j.LogManager;
@@ -36,6 +38,19 @@ public class RLCraftVillagerTomes {
         // Must happen in preInit: villagers can start being loaded as soon as a world does,
         // and a capability that is not registered by then cannot be attached to them.
         CapabilityTomeKnowledge.register();
+    }
+
+    /**
+     * Turns configured catalyst names into real items.
+     *
+     * <p>Deferred to load-complete rather than done at config load because the config is
+     * read during pre-init, before other mods have finished registering their items. Asking
+     * the registry that early reports another mod's item as missing when it is simply not
+     * there yet.
+     */
+    @EventHandler
+    public void loadComplete(FMLLoadCompleteEvent event) {
+        CatalystRegistry.resolveItems();
     }
 
     @EventHandler

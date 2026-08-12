@@ -1,5 +1,6 @@
 package com.exiledradio.rlcraftvillagertomes;
 
+import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystRegistry;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -43,10 +44,13 @@ public class ModConfig {
     public static final String CATEGORY_PRICING = "pricing";
     /** Chat, sound and particle feedback. */
     public static final String CATEGORY_FEEDBACK = "feedback";
+    /** The rarity tier list that drives catalysts and slot requests. */
+    public static final String CATEGORY_CATALYSTS = "catalysts";
 
     /** Display order in the config screen. Without this the GUI sorts alphabetically. */
     private static final String[] CATEGORIES = {
-            CATEGORY_LEARNING, CATEGORY_UPGRADING, CATEGORY_PRICING, CATEGORY_FEEDBACK,
+            CATEGORY_LEARNING, CATEGORY_UPGRADING, CATEGORY_PRICING, CATEGORY_CATALYSTS,
+            CATEGORY_FEEDBACK,
     };
 
     private static final List<String> ORDER_LEARNING = Arrays.asList(
@@ -64,6 +68,9 @@ public class ModConfig {
             "COST_MULTIPLIER_VERY_RARE", "TREASURE_COST_MULTIPLIER",
             "EXTRA_INPUT_ITEM", "EXTRA_INPUT_COUNT", "MAX_TRADE_USES",
             "NEVER_LOCK_TAUGHT_TRADES", "NEVER_LOCK_ANY_TRADE", "TRADE_GRANTS_XP");
+
+    private static final List<String> ORDER_CATALYSTS = Arrays.asList(
+            "CATALYST_TIERS", "CATALYST_ITEMS");
 
     private static final List<String> ORDER_FEEDBACK = Arrays.asList(
             "ANNOUNCE_LEARNED", "ANNOUNCE_UPGRADED", "ANNOUNCE_REJECTED",
@@ -105,6 +112,7 @@ public class ModConfig {
         for (String key : ORDER_LEARNING) CATEGORY_OF_KEY.put(key, CATEGORY_LEARNING);
         for (String key : ORDER_UPGRADING) CATEGORY_OF_KEY.put(key, CATEGORY_UPGRADING);
         for (String key : ORDER_PRICING) CATEGORY_OF_KEY.put(key, CATEGORY_PRICING);
+        for (String key : ORDER_CATALYSTS) CATEGORY_OF_KEY.put(key, CATEGORY_CATALYSTS);
         for (String key : ORDER_FEEDBACK) CATEGORY_OF_KEY.put(key, CATEGORY_FEEDBACK);
     }
 
@@ -145,6 +153,20 @@ public class ModConfig {
     public static boolean NEVER_LOCK_TAUGHT_TRADES = true;
     public static boolean NEVER_LOCK_ANY_TRADE = false;
     public static boolean TRADE_GRANTS_XP = true;
+
+    // catalysts
+    public static String[] CATALYST_TIERS = {
+            "common=1.0,8-24",
+            "uncommon=2.5,4-12",
+            "rare=5.0,2-8",
+            "epic=10.0,1-4",
+            "legendary=15.0,1-2",
+    };
+    public static String[] CATALYST_ITEMS = {
+            "xat:glowing_powder=common",
+            "xat:glowing_ingot=rare",
+            "xat:glowing_gem=epic",
+    };
 
     // feedback
     public static boolean ANNOUNCE_LEARNED = true;
@@ -192,6 +214,7 @@ public class ModConfig {
         loadLearning();
         loadUpgrading();
         loadPricing();
+        loadCatalysts();
         loadFeedback();
 
         clampAndDerive();
@@ -749,6 +772,60 @@ public class ModConfig {
         );
     }
 
+    // --------------------------------------------------------------- catalysts
+
+    private static void loadCatalysts() {
+        config.setCategoryComment(CATEGORY_CATALYSTS,
+                "The rarity tier list.\n"
+                        + "\n"
+                        + "Nothing here does anything on its own yet - it is the data the chance and\n"
+                        + "slot-request systems are built on. Filling it in now means those arrive\n"
+                        + "already tuned for your pack.\n"
+                        + "\n"
+                        + "One tier definition drives both halves of it. The percentage is what an\n"
+                        + "item is worth when banked into a villager to improve a teaching attempt;\n"
+                        + "the count range is how many of it a villager asks for when it rolls a slot\n"
+                        + "request. Splitting tiers from items means 'how much is rare worth' is one\n"
+                        + "edit rather than a hunt through every rare item.\n"
+                        + "\n"
+                        + "Run /villagertomes tiers in game to see exactly what was parsed, which\n"
+                        + "items were found, and what tier the item in your hand belongs to.");
+        config.setCategoryPropertyOrder(CATEGORY_CATALYSTS, mutableOrder(ORDER_CATALYSTS));
+
+        CATALYST_TIERS = config.getStringList(
+                "CATALYST_TIERS", CATEGORY_CATALYSTS, CATALYST_TIERS,
+                "Rarity bands, one per line, as name=percent,min-max\n"
+                        + "\n"
+                        + "  name     lower-case identifier the item list refers to.\n"
+                        + "  percent  percentage points one of these adds to a teaching attempt.\n"
+                        + "  min-max  how many a villager asks for when it wants one of these.\n"
+                        + "\n"
+                        + "So common=1.0,8-24 means a common item is worth +1% and gets asked for in\n"
+                        + "batches of 8 to 24 - the emerald x18 end of a request. legendary=15.0,1-2\n"
+                        + "is the single-item end.\n"
+                        + "\n"
+                        + "Names are yours to choose; nothing is hard-coded. A malformed line is\n"
+                        + "named in the log and skipped, never a crash."
+        );
+
+        CATALYST_ITEMS = config.getStringList(
+                "CATALYST_ITEMS", CATEGORY_CATALYSTS, CATALYST_ITEMS,
+                "Which items belong to which tier, one per line, as modid:item=tier\n"
+                        + "\n"
+                        + "Metadata is optional: minecraft:dye:4=rare picks out lapis specifically,\n"
+                        + "while minecraft:dye=common covers every colour. An exact metadata match\n"
+                        + "beats an any-metadata one, so you can tier a whole item and then single\n"
+                        + "out one variant as worth more.\n"
+                        + "\n"
+                        + "NBT is ignored, so an enchanted or renamed copy of a material still counts.\n"
+                        + "\n"
+                        + "The defaults are the Trinkets and Baubles crafting ladder, whose own\n"
+                        + "tooltips call them Tier 1, 2 and 3. Items no loaded mod registers are\n"
+                        + "skipped with one summary line in the log, so a list written for a full pack\n"
+                        + "is safe to carry to a smaller one."
+        );
+    }
+
     // ---------------------------------------------------------------- feedback
 
     private static void loadFeedback() {
@@ -840,6 +917,10 @@ public class ModConfig {
         allowedProfessionsLabel = describeProfessions(ALLOWED_PROFESSIONS);
 
         extraInput = resolveExtraInput();
+
+        // Syntax is checked here; the item names are looked up later, once every mod has
+        // finished registering. See CatalystRegistry for why those are two separate steps.
+        CatalystRegistry.reload(CATALYST_TIERS, CATALYST_ITEMS);
     }
 
     /**
