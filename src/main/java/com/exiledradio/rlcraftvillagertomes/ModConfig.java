@@ -46,11 +46,13 @@ public class ModConfig {
     public static final String CATEGORY_FEEDBACK = "feedback";
     /** The rarity tier list that drives catalysts and slot requests. */
     public static final String CATEGORY_CATALYSTS = "catalysts";
+    /** Whether teaching succeeds at all, and what moves the odds. */
+    public static final String CATEGORY_CHANCE = "chance";
 
     /** Display order in the config screen. Without this the GUI sorts alphabetically. */
     private static final String[] CATEGORIES = {
-            CATEGORY_LEARNING, CATEGORY_UPGRADING, CATEGORY_PRICING, CATEGORY_CATALYSTS,
-            CATEGORY_FEEDBACK,
+            CATEGORY_LEARNING, CATEGORY_CHANCE, CATEGORY_UPGRADING, CATEGORY_PRICING,
+            CATEGORY_CATALYSTS, CATEGORY_FEEDBACK,
     };
 
     private static final List<String> ORDER_LEARNING = Arrays.asList(
@@ -68,6 +70,11 @@ public class ModConfig {
             "COST_MULTIPLIER_VERY_RARE", "TREASURE_COST_MULTIPLIER",
             "EXTRA_INPUT_ITEM", "EXTRA_INPUT_COUNT", "MAX_TRADE_USES",
             "NEVER_LOCK_TAUGHT_TRADES", "NEVER_LOCK_ANY_TRADE", "TRADE_GRANTS_XP");
+
+    private static final List<String> ORDER_CHANCE = Arrays.asList(
+            "ENABLE_CHANCE", "BASE_SUCCESS_CHANCE", "MAX_SUCCESS_CHANCE", "MIN_SUCCESS_CHANCE",
+            "PITY_PER_FAILURE", "PITY_CAP", "CONSUME_BOOK_ON_FAILURE",
+            "CONSUME_CATALYSTS_ON_FAILURE");
 
     private static final List<String> ORDER_CATALYSTS = Arrays.asList(
             "CATALYST_TIERS", "CATALYST_ITEMS");
@@ -112,6 +119,7 @@ public class ModConfig {
         for (String key : ORDER_LEARNING) CATEGORY_OF_KEY.put(key, CATEGORY_LEARNING);
         for (String key : ORDER_UPGRADING) CATEGORY_OF_KEY.put(key, CATEGORY_UPGRADING);
         for (String key : ORDER_PRICING) CATEGORY_OF_KEY.put(key, CATEGORY_PRICING);
+        for (String key : ORDER_CHANCE) CATEGORY_OF_KEY.put(key, CATEGORY_CHANCE);
         for (String key : ORDER_CATALYSTS) CATEGORY_OF_KEY.put(key, CATEGORY_CATALYSTS);
         for (String key : ORDER_FEEDBACK) CATEGORY_OF_KEY.put(key, CATEGORY_FEEDBACK);
     }
@@ -154,6 +162,16 @@ public class ModConfig {
     public static boolean NEVER_LOCK_ANY_TRADE = false;
     public static boolean TRADE_GRANTS_XP = true;
 
+    // chance
+    public static boolean ENABLE_CHANCE = true;
+    public static float BASE_SUCCESS_CHANCE = 50.0F;
+    public static float MAX_SUCCESS_CHANCE = 80.0F;
+    public static float MIN_SUCCESS_CHANCE = 1.0F;
+    public static float PITY_PER_FAILURE = 5.0F;
+    public static float PITY_CAP = 70.0F;
+    public static boolean CONSUME_BOOK_ON_FAILURE = true;
+    public static boolean CONSUME_CATALYSTS_ON_FAILURE = true;
+
     // catalysts
     public static String[] CATALYST_TIERS = {
             "common=1.0,8-24",
@@ -161,11 +179,12 @@ public class ModConfig {
             "rare=5.0,2-8",
             "epic=10.0,1-4",
             "legendary=15.0,1-2",
+            "mythic=30.0,1-1",
     };
     public static String[] CATALYST_ITEMS = {
             "xat:glowing_powder=common",
             "xat:glowing_ingot=rare",
-            "xat:glowing_gem=epic",
+            "xat:glowing_gem=mythic",
     };
 
     // feedback
@@ -212,6 +231,7 @@ public class ModConfig {
         pruneUnknownKeys();
 
         loadLearning();
+        loadChance();
         loadUpgrading();
         loadPricing();
         loadCatalysts();
@@ -772,6 +792,98 @@ public class ModConfig {
         );
     }
 
+    // ------------------------------------------------------------------ chance
+
+    private static void loadChance() {
+        config.setCategoryComment(CATEGORY_CHANCE,
+                "Whether a book actually takes, and what moves the odds.\n"
+                        + "\n"
+                        + "The loop: bank catalyst items into a villager to raise its odds, check\n"
+                        + "where you stand by sneak-clicking it empty-handed, then commit the book.\n"
+                        + "A failed attempt destroys the book and the catalysts you banked, and\n"
+                        + "raises the floor for that enchantment on that villager - so a bad run is\n"
+                        + "expensive but never endless.\n"
+                        + "\n"
+                        + "The whole system is one switch away from the old guaranteed behaviour.\n"
+                        + "See ENABLE_CHANCE.");
+        config.setCategoryPropertyOrder(CATEGORY_CHANCE, mutableOrder(ORDER_CHANCE));
+
+        ENABLE_CHANCE = config.getBoolean(
+                "ENABLE_CHANCE", CATEGORY_CHANCE, true,
+                "If true (default), teaching a book is a roll that can fail.\n"
+                        + "\n"
+                        + "Set to false and every book is accepted outright, exactly as it worked\n"
+                        + "before this system existed. Catalysts are then never asked for and never\n"
+                        + "consumed. This is the switch to reach for if you want the mod's original\n"
+                        + "no-gambling behaviour back without reinstalling an old version."
+        );
+
+        BASE_SUCCESS_CHANCE = config.getFloat(
+                "BASE_SUCCESS_CHANCE", CATEGORY_CHANCE, 50.0F, 0.0F, 100.0F,
+                "The chance a book is accepted with nothing banked, as a percentage.\n"
+                        + "50 (default) makes an unaided attempt a coin flip, which is what makes\n"
+                        + "catalysts worth gathering at all."
+        );
+
+        MAX_SUCCESS_CHANCE = config.getFloat(
+                "MAX_SUCCESS_CHANCE", CATEGORY_CHANCE, 80.0F, 1.0F, 100.0F,
+                "The highest chance any amount of catalysts can reach, as a percentage.\n"
+                        + "\n"
+                        + "80 (default) deliberately leaves teaching a gamble no matter how much you\n"
+                        + "pour into it - one attempt in five still fails at the ceiling. Set to 100\n"
+                        + "if you would rather enough preparation guarantee the result.\n"
+                        + "\n"
+                        + "Banking beyond this is refused rather than wasted: a villager already at\n"
+                        + "the ceiling hands your catalyst back."
+        );
+
+        MIN_SUCCESS_CHANCE = config.getFloat(
+                "MIN_SUCCESS_CHANCE", CATEGORY_CHANCE, 1.0F, 0.0F, 100.0F,
+                "The lowest chance an attempt can ever have, as a percentage.\n"
+                        + "Only reachable if you set BASE_SUCCESS_CHANCE very low; it exists so a\n"
+                        + "misconfigured base cannot make books impossible to teach."
+        );
+
+        PITY_PER_FAILURE = config.getFloat(
+                "PITY_PER_FAILURE", CATEGORY_CHANCE, 5.0F, 0.0F, 100.0F,
+                "How many percentage points the floor rises each time an attempt fails, for\n"
+                        + "that enchantment on that villager.\n"
+                        + "\n"
+                        + "Tracked per villager AND per enchantment, so failing Mending on one\n"
+                        + "librarian makes Mending easier on that librarian only - not Unbreaking,\n"
+                        + "and not on the librarian next door. Committing to a villager is what pays\n"
+                        + "off, which is the same thing the permanently locked slots are asking of\n"
+                        + "you.\n"
+                        + "\n"
+                        + "Success clears the count. Set to 0 to remove the mercy rule entirely and\n"
+                        + "let bad luck run forever."
+        );
+
+        PITY_CAP = config.getFloat(
+                "PITY_CAP", CATEGORY_CHANCE, 70.0F, 0.0F, 100.0F,
+                "The highest the failure floor alone can push an attempt, as a percentage.\n"
+                        + "\n"
+                        + "70 (default) sits below MAX_SUCCESS_CHANCE on purpose: persistence alone\n"
+                        + "gets you close, but the last stretch to the ceiling still costs catalysts.\n"
+                        + "Raise it to 80 and enough failures eventually buy the ceiling for free."
+        );
+
+        CONSUME_BOOK_ON_FAILURE = config.getBoolean(
+                "CONSUME_BOOK_ON_FAILURE", CATEGORY_CHANCE, true,
+                "If true (default), a failed attempt destroys the book.\n"
+                        + "This is what gives the roll teeth. Set to false and a failure costs you\n"
+                        + "only the catalysts, which makes the whole thing much gentler."
+        );
+
+        CONSUME_CATALYSTS_ON_FAILURE = config.getBoolean(
+                "CONSUME_CATALYSTS_ON_FAILURE", CATEGORY_CHANCE, true,
+                "If true (default), a failed attempt also burns everything you had banked, and\n"
+                        + "the villager drops back to its base chance.\n"
+                        + "Set to false and banked catalysts survive a failure, so a villager you\n"
+                        + "have invested in stays primed for the next book."
+        );
+    }
+
     // --------------------------------------------------------------- catalysts
 
     private static void loadCatalysts() {
@@ -895,6 +1007,19 @@ public class ModConfig {
         // maximum gives way - a player who set a floor of 10 clearly wants trades to cost
         // at least 10.
         if (MAX_EMERALD_COST < MIN_EMERALD_COST) MAX_EMERALD_COST = MIN_EMERALD_COST;
+
+        // A ceiling below the base would make every attempt impossible, and a pity cap below
+        // the base would silently subtract from it - both are contradictions with no sensible
+        // reading, so the base wins and the other value is pulled up to meet it.
+        if (BASE_SUCCESS_CHANCE < 0.0F) BASE_SUCCESS_CHANCE = 0.0F;
+        if (BASE_SUCCESS_CHANCE > 100.0F) BASE_SUCCESS_CHANCE = 100.0F;
+        if (MAX_SUCCESS_CHANCE < BASE_SUCCESS_CHANCE) MAX_SUCCESS_CHANCE = BASE_SUCCESS_CHANCE;
+        if (MAX_SUCCESS_CHANCE > 100.0F) MAX_SUCCESS_CHANCE = 100.0F;
+        if (MIN_SUCCESS_CHANCE > MAX_SUCCESS_CHANCE) MIN_SUCCESS_CHANCE = MAX_SUCCESS_CHANCE;
+        if (MIN_SUCCESS_CHANCE < 0.0F) MIN_SUCCESS_CHANCE = 0.0F;
+        if (PITY_PER_FAILURE < 0.0F) PITY_PER_FAILURE = 0.0F;
+        if (PITY_CAP < BASE_SUCCESS_CHANCE) PITY_CAP = BASE_SUCCESS_CHANCE;
+        if (PITY_CAP > 100.0F) PITY_CAP = 100.0F;
 
         if (EXTRA_INPUT_COUNT < 0) EXTRA_INPUT_COUNT = 0;
         if (EXTRA_INPUT_COUNT > MAX_STACK) EXTRA_INPUT_COUNT = MAX_STACK;
@@ -1042,6 +1167,26 @@ public class ModConfig {
     }
 
     // ------------------------------------------------------------- lookups
+
+    /**
+     * The floor an attempt starts from, before banked catalysts.
+     *
+     * <p>Base, plus the pity earned by failing this enchantment on this villager, capped by
+     * {@link #PITY_CAP}. Deliberately separate from the banked half so both the chat readout
+     * and the roll can be built from the same two pieces and cannot disagree.
+     */
+    public static float getFloorChance(int failures) {
+        float floor = BASE_SUCCESS_CHANCE + Math.max(0, failures) * PITY_PER_FAILURE;
+        return Math.min(floor, Math.max(BASE_SUCCESS_CHANCE, PITY_CAP));
+    }
+
+    /** The final odds of an attempt: floor plus banked catalysts, clamped to the limits. */
+    public static float getTotalChance(int failures, float banked) {
+        float total = getFloorChance(failures) + Math.max(0.0F, banked);
+        if (total > MAX_SUCCESS_CHANCE) total = MAX_SUCCESS_CHANCE;
+        if (total < MIN_SUCCESS_CHANCE) total = MIN_SUCCESS_CHANCE;
+        return total;
+    }
 
     /** True when two books of the same level step a trade up by one. */
     public static boolean upgradesFromPair() {

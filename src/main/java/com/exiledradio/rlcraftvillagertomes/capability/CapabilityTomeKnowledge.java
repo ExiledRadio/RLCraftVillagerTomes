@@ -16,6 +16,7 @@ import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
@@ -45,6 +46,9 @@ public final class CapabilityTomeKnowledge {
     private static final String TAG_LIST = "Tomes";
     private static final String TAG_ID = "id";
     private static final String TAG_LEVEL = "lvl";
+    private static final String TAG_BANKED = "Banked";
+    private static final String TAG_FAILURES = "Fails";
+    private static final String TAG_COUNT = "n";
 
     private CapabilityTomeKnowledge() {
     }
@@ -105,6 +109,19 @@ public final class CapabilityTomeKnowledge {
             }
             NBTTagCompound root = new NBTTagCompound();
             root.setTag(TAG_LIST, list);
+            root.setFloat(TAG_BANKED, instance.getBankedChance());
+
+            if (instance instanceof TomeKnowledge) {
+                NBTTagList fails = new NBTTagList();
+                for (Map.Entry<ResourceLocation, Integer> entry
+                        : ((TomeKnowledge) instance).failureView().entrySet()) {
+                    NBTTagCompound tag = new NBTTagCompound();
+                    tag.setString(TAG_ID, entry.getKey().toString());
+                    tag.setInteger(TAG_COUNT, entry.getValue().intValue());
+                    fails.appendTag(tag);
+                }
+                root.setTag(TAG_FAILURES, fails);
+            }
             return root;
         }
 
@@ -129,6 +146,25 @@ public final class CapabilityTomeKnowledge {
                 // was possible, so villagers saved by earlier versions load as they were.
                 if (id != null && !id.isEmpty() && level >= 1) {
                     instance.add(new ResourceLocation(id), level);
+                }
+            }
+
+            // Both of these are absent on villagers saved before the chance system existed.
+            // getFloat and getTagList both return harmless empties for a missing key, so an
+            // older villager simply loads with nothing banked and no failures - which is
+            // exactly right for one that has never been gambled on.
+            NBTTagCompound root = (NBTTagCompound) nbt;
+            if (instance instanceof TomeKnowledge) {
+                ((TomeKnowledge) instance).setBankedChance(root.getFloat(TAG_BANKED));
+
+                NBTTagList fails = root.getTagList(TAG_FAILURES, 10);
+                for (int i = 0; i < fails.tagCount(); i++) {
+                    NBTTagCompound tag = fails.getCompoundTagAt(i);
+                    String id = tag.getString(TAG_ID);
+                    if (id != null && !id.isEmpty()) {
+                        ((TomeKnowledge) instance).setFailures(
+                                new ResourceLocation(id), tag.getInteger(TAG_COUNT));
+                    }
                 }
             }
         }

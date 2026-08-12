@@ -5,7 +5,9 @@ import net.minecraft.util.ResourceLocation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /** The only implementation of {@link ITomeKnowledge}. */
 public class TomeKnowledge implements ITomeKnowledge {
@@ -102,6 +104,67 @@ public class TomeKnowledge implements ITomeKnowledge {
     @Override
     public void clear() {
         tomes.clear();
+        bankedChance = 0.0F;
+        failures.clear();
+    }
+
+    // ------------------------------------------------------------------ chance
+
+    private float bankedChance;
+
+    private final Map<ResourceLocation, Integer> failures =
+            new LinkedHashMap<ResourceLocation, Integer>();
+
+    @Override
+    public float getBankedChance() {
+        return bankedChance;
+    }
+
+    @Override
+    public void addBankedChance(float percent) {
+        if (percent > 0.0F) {
+            bankedChance += percent;
+        }
+    }
+
+    @Override
+    public void clearBankedChance() {
+        bankedChance = 0.0F;
+    }
+
+    @Override
+    public int getFailures(ResourceLocation enchantment) {
+        Integer count = failures.get(enchantment);
+        return count == null ? 0 : count.intValue();
+    }
+
+    @Override
+    public void recordFailure(ResourceLocation enchantment) {
+        if (enchantment != null) {
+            failures.put(enchantment, Integer.valueOf(getFailures(enchantment) + 1));
+        }
+    }
+
+    @Override
+    public void clearFailures(ResourceLocation enchantment) {
+        failures.remove(enchantment);
+    }
+
+    /** Read-only view of the failure counts, for storage and the admin command. */
+    public Map<ResourceLocation, Integer> failureView() {
+        return Collections.unmodifiableMap(failures);
+    }
+
+    /** Used by storage when loading; bypasses the increment-by-one of recordFailure. */
+    public void setFailures(ResourceLocation enchantment, int count) {
+        if (enchantment != null && count > 0) {
+            failures.put(enchantment, Integer.valueOf(count));
+        }
+    }
+
+    /** Used by storage when loading. */
+    public void setBankedChance(float percent) {
+        bankedChance = Math.max(0.0F, percent);
     }
 
     @Override

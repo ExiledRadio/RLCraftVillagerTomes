@@ -2,6 +2,9 @@ package com.exiledradio.rlcraftvillagertomes;
 
 import com.exiledradio.rlcraftvillagertomes.capability.CapabilityTomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
+import com.exiledradio.rlcraftvillagertomes.capability.Tome;
+import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystEntry;
+import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystRegistry;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.passive.EntityVillager;
@@ -65,8 +68,31 @@ public final class TomeLearningHandler {
             return;
         }
 
-        boolean teaching = ModConfig.ENABLE_LEARNING && !held.isEmpty()
-                && held.getItem() == Items.ENCHANTED_BOOK && isTeachingClick(player);
+        // A sneak-click now means three different things depending on what is in hand: a
+        // book is an attempt, a catalyst is a deposit, and an empty hand is a question.
+        // Anything else is none of our business and falls through to the trade screen.
+        boolean sneakAction = ModConfig.ENABLE_LEARNING && isTeachingClick(player);
+        boolean teaching = sneakAction && !held.isEmpty()
+                && held.getItem() == Items.ENCHANTED_BOOK;
+        boolean banking = sneakAction && ModConfig.ENABLE_CHANCE && !held.isEmpty()
+                && CatalystRegistry.find(held) != null;
+        boolean asking = sneakAction && ModConfig.ENABLE_CHANCE && held.isEmpty();
+
+        if (banking || asking) {
+            event.setCanceled(true);
+            event.setCancellationResult(EnumActionResult.SUCCESS);
+            player.swingArm(event.getHand());
+
+            String blocker = findVillagerBlocker(villager);
+            if (blocker != null) {
+                refuse(player, villager, held, blocker);
+            } else if (banking) {
+                bankCatalyst(player, villager, held, tomes);
+            } else {
+                reportChance(player, tomes);
+            }
+            return;
+        }
 
         if (!teaching) {
             // This click is on its way to the trade screen. Reconciling the list now is what
@@ -127,12 +153,132 @@ public final class TomeLearningHandler {
             return;
         }
 
+        // The roll. One per book, not per enchantment: a multi-enchantment book is already
+        // all-or-nothing everywhere else, and rolling each line separately would let half a
+        // book land, which there is no way to represent.
+        if (ModConfig.ENABLE_CHANCE && !player.capabilities.isCreativeMode) {
+            ResourceLocation gambledOn = plan.primaryEnchantment();
+            float chance = ModConfig.getTotalChance(
+                    tomes.getFailures(gambledOn), tomes.getBankedChance());
+
+            if (villager.world.rand.nextFloat() * 100.0F >= chance) {
+                failAttempt(player, villager, held, tomes, gambledOn, chance);
+                return;
+            }
+            tomes.clearFailures(gambledOn);
+            tomes.clearBankedChance();
+        }
+
         apply(plan, tomes);
         if (!player.capabilities.isCreativeMode) {
             held.shrink(1);
         }
         TomeTradeSync.sync(villager, player, tomes);
         celebrate(player, villager, plan);
+    }
+
+    /**
+     * Banks one catalyst into the villager, raising its odds for the next attempt.
+     *
+     * <p>Refused rather than eaten once the villager is already at the ceiling, because
+     * silently swallowing an item that cannot possibly help is the kind of thing players
+     * only notice after they have fed it six.
+     */
+    private static void bankCatalyst(EntityPlayer player, EntityVillager villager,
+                                     ItemStack held, ITomeKnowledge tomes) {
+        CatalystEntry entry = CatalystRegistry.find(held);
+        if (entry == null) {
+            return;
+        }
+
+        // Measured against the floor with no pity, because pity is per enchantment and this
+        // deposit is not about any particular book.
+        float current = ModConfig.getTotalChance(0, tomes.getBankedChance());
+        if (current >= ModConfig.MAX_SUCCESS_CHANCE) {
+            refuse(player, villager, held, "This villager is already at the maximum "
+                    + percent(ModConfig.MAX_SUCCESS_CHANCE) + " chance - keep that for another.");
+            return;
+        }
+
+        tomes.addBankedChance(entry.getTier().getPercent());
+        if (!player.capabilities.isCreativeMode) {
+            held.shrink(1);
+        }
+
+        if (ModConfig.PLAY_SOUNDS) {
+            villager.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7F, 1.4F);
+        }
+        spawnParticles(villager, EnumParticleTypes.VILLAGER_HAPPY);
+
+        if (ModConfig.ANNOUNCE_LEARNED) {
+            float now = ModConfig.getTotalChance(0, tomes.getBankedChance());
+            ITextComponent message = new TextComponentString(PREFIX + TextFormatting.GREEN
+                    + "Banked ");
+            message.appendSibling(held.getTextComponent());
+            message.appendSibling(new TextComponentString(TextFormatting.GREEN + " (+"
+                    + percent(entry.getTier().getPercent()) + "). "
+                    + TextFormatting.GRAY + "Chance now " + percent(now) + "."));
+            player.sendMessage(message);
+        }
+    }
+
+    /** Answers the empty-handed sneak-click: where this villager currently stands. */
+    private static void reportChance(EntityPlayer player, ITomeKnowledge tomes) {
+        float banked = tomes.getBankedChance();
+        float total = ModConfig.getTotalChance(0, banked);
+
+        player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
+                + "Current chance of success: " + TextFormatting.WHITE + percent(total)));
+        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  base "
+                + percent(ModConfig.BASE_SUCCESS_CHANCE)
+                + (banked > 0.0F ? ", banked +" + percent(banked) : ", nothing banked")
+                + ", ceiling " + percent(ModConfig.MAX_SUCCESS_CHANCE)));
+
+        // Pity is per enchantment, so it cannot be folded into the headline number - but
+        // hiding it entirely would leave a player wondering why a book they have failed
+        // four times suddenly reads better than the summary said.
+        for (Tome tome : tomes.view()) {
+            int failures = tomes.getFailures(tome.getEnchantment());
+            if (failures > 0) {
+                player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  "
+                        + tome.getEnchantment() + " has failed " + failures + "x here - "
+                        + percent(ModConfig.getTotalChance(failures, banked)) + " for that one"));
+            }
+        }
+    }
+
+    /** A lost roll: the book burns, the bank empties, and the floor rises a little. */
+    private static void failAttempt(EntityPlayer player, EntityVillager villager, ItemStack held,
+                                    ITomeKnowledge tomes, ResourceLocation gambledOn,
+                                    float chance) {
+        if (ModConfig.CONSUME_BOOK_ON_FAILURE) {
+            held.shrink(1);
+        }
+        if (ModConfig.CONSUME_CATALYSTS_ON_FAILURE) {
+            tomes.clearBankedChance();
+        }
+        tomes.recordFailure(gambledOn);
+
+        if (ModConfig.PLAY_SOUNDS) {
+            villager.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.0F, 1.0F);
+            villager.playSound(SoundEvents.ENTITY_ITEM_BREAK, 0.8F, 0.8F);
+        }
+        spawnParticles(villager, EnumParticleTypes.SMOKE_LARGE);
+
+        if (ModConfig.ANNOUNCE_REJECTED) {
+            float next = ModConfig.getTotalChance(
+                    tomes.getFailures(gambledOn), tomes.getBankedChance());
+            player.sendMessage(new TextComponentString(PREFIX + TextFormatting.RED
+                    + "The binding failed at " + percent(chance) + "."
+                    + TextFormatting.GRAY + " Next attempt at that enchantment here: "
+                    + percent(next) + "."));
+        }
+    }
+
+    /** Trims the trailing zero off whole percentages so chat reads "50%" rather than "50.0%". */
+    private static String percent(float value) {
+        return (value == Math.rint(value) ? String.valueOf((int) value) : String.valueOf(value))
+                + "%";
     }
 
     /**
@@ -443,6 +589,18 @@ public final class TomeLearningHandler {
         String refusal;
         /** How many slots the villager had filled before this book was applied. */
         int slotsUsedBefore;
+
+        /**
+         * The enchantment a failed roll is recorded against.
+         *
+         * <p>One roll covers the whole book, so a multi-enchantment book has to pin its
+         * pity on something. The first entry is the honest choice: it is the one the player
+         * was most likely aiming for, and spreading a single failure across every line would
+         * make one unlucky Mending-and-Unbreaking book worth two failures.
+         */
+        ResourceLocation primaryEnchantment() {
+            return changes.isEmpty() ? null : changes.get(0).id;
+        }
     }
 
     /** One edit to make, once the whole book is known to be acceptable. */

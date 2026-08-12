@@ -73,4 +73,35 @@ public interface ITomeKnowledge {
      * list.
      */
     List<Tome> view();
+
+    // ------------------------------------------------------------------ chance
+
+    /**
+     * Percentage points of catalyst banked into this villager, waiting to be spent on the
+     * next teaching attempt.
+     *
+     * <p>Lives on the villager rather than the player because that is what the mechanic is:
+     * you prime a specific villager, and walking away leaves the investment sitting on it.
+     */
+    float getBankedChance();
+
+    /** Adds to the bank. Negative amounts are ignored. */
+    void addBankedChance(float percent);
+
+    /** Empties the bank, which is what happens after any attempt, win or lose. */
+    void clearBankedChance();
+
+    /**
+     * How many times an attempt at this enchantment has failed on this villager.
+     *
+     * <p>Per villager and per enchantment: failing Mending here makes Mending easier here,
+     * and says nothing about Unbreaking or about the librarian next door.
+     */
+    int getFailures(ResourceLocation enchantment);
+
+    /** Records a failure, raising the floor for the next attempt at that enchantment. */
+    void recordFailure(ResourceLocation enchantment);
+
+    /** Forgets the failures for an enchantment, which is what a success does. */
+    void clearFailures(ResourceLocation enchantment);
 }
