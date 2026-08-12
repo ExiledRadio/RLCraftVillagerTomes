@@ -7,6 +7,7 @@ import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
@@ -56,9 +57,24 @@ public final class QuestBinding {
      */
     public static void offer(EntityPlayer player, EntityVillager villager, ItemStack log,
                              ITomeKnowledge tomes) {
-        if (SlotRequests.openSlots(tomes) > 0 || tomes.getRequest().isEmpty()) {
+        if (SlotRequests.openSlots(tomes) > 0) {
             player.sendMessage(new TextComponentString(prefix() + TextFormatting.GRAY
-                    + "This villager is not waiting on anything - nothing to write down."));
+                    + "This villager already has room - nothing to write down."));
+            return;
+        }
+        if (SlotRequests.unlockedSlots(tomes) >= ModConfig.MAX_TOMES_PER_VILLAGER) {
+            player.sendMessage(new TextComponentString(prefix() + TextFormatting.GRAY
+                    + "This villager is full - nothing left to save for."));
+            return;
+        }
+
+        // Demands are rolled lazily, so a villager nobody has offered a book to has none
+        // yet. Rolling it here is what lets the log be the first thing you show a villager
+        // rather than something you can only use after being refused once.
+        SlotRequests.ensureRequest(villager, tomes);
+        if (tomes.getRequest().isEmpty()) {
+            player.sendMessage(new TextComponentString(prefix() + TextFormatting.GRAY
+                    + "This villager is not asking for anything."));
             return;
         }
 
@@ -105,7 +121,7 @@ public final class QuestBinding {
             return "That villager is no longer nearby.";
         }
 
-        ItemStack log = heldLog(player);
+        ItemStack log = findLog(player);
         if (log.isEmpty()) {
             return "You are not holding your quest log.";
         }
@@ -156,7 +172,7 @@ public final class QuestBinding {
      * not carrying a log at all.
      */
     public static void clearIfLogged(EntityPlayer player, EntityVillager villager) {
-        ItemStack log = heldLog(player);
+        ItemStack log = findLog(player);
         if (log.isEmpty()) {
             return;
         }
@@ -169,7 +185,7 @@ public final class QuestBinding {
     /** Refreshes a held log's entry for this villager, so progress shows without re-naming. */
     public static void refreshIfLogged(EntityPlayer player, EntityVillager villager,
                                        ITomeKnowledge tomes) {
-        ItemStack log = heldLog(player);
+        ItemStack log = findLog(player);
         if (log.isEmpty()) {
             return;
         }
@@ -184,14 +200,45 @@ public final class QuestBinding {
 
     // ---------------------------------------------------------------- helpers
 
-    /** The quest log in either hand, or an empty stack. */
-    public static ItemStack heldLog(EntityPlayer player) {
+    /**
+     * The player's quest log - hands first, then the rest of the inventory.
+     *
+     * <p>Searching past the hands matters because a freshly made log does not always end up
+     * in one: turning a stack of quills into a log leaves the quills where they were and the
+     * log wherever there was room. Returning the live stack rather than a copy is the whole
+     * point, since everything written afterwards goes through this.
+     */
+    public static ItemStack findLog(EntityPlayer player) {
         for (ItemStack stack : player.getHeldEquipment()) {
             if (QuestLog.isLog(stack)) {
                 return stack;
             }
         }
+        for (int i = 0; i < player.inventory.getSizeInventory(); i++) {
+            ItemStack stack = player.inventory.getStackInSlot(i);
+            if (QuestLog.isLog(stack)) {
+                return stack;
+            }
+        }
         return ItemStack.EMPTY;
+    }
+
+    /**
+     * Puts a newly made log where the player can reach it, and hands back the live stack.
+     *
+     * <p>{@code addItemStackToInventory} stores a <em>copy</em> and empties the stack it was
+     * given, so writing to the stack you passed it writes into nothing - which is exactly
+     * why a first entry reported "0/10 logged". Whatever route the log takes, the stack that
+     * actually lives in the inventory is looked up again afterwards.
+     */
+    public static ItemStack placeNewLog(EntityPlayer player, ItemStack log) {
+        if (player.getHeldItemMainhand().isEmpty()) {
+            player.setHeldItem(EnumHand.MAIN_HAND, log);
+        } else if (!player.inventory.addItemStackToInventory(log)) {
+            player.dropItem(log, false);
+            return ItemStack.EMPTY;
+        }
+        return findLog(player);
     }
 
     private static EntityVillager findVillager(EntityPlayer player, UUID id) {

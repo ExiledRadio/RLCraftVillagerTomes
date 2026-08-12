@@ -110,6 +110,7 @@ public final class TomeLearningHandler {
             event.setCanceled(true);
             event.setCancellationResult(EnumActionResult.SUCCESS);
             player.swingArm(event.getHand());
+            claimClick(player);
 
             String blocker = findVillagerBlocker(villager);
             if (blocker != null) {
@@ -117,15 +118,14 @@ public final class TomeLearningHandler {
             } else if (logging) {
                 ItemStack log = held;
                 if (QuestLog.isBlank(held)) {
-                    log = QuestLog.createFrom(held, player);
-                    // The quill is gone and the log is a different stack, so it has to be
-                    // put somewhere - the now-empty hand if the quill was the last one,
-                    // otherwise wherever there is room.
-                    if (!player.inventory.addItemStackToInventory(log)) {
-                        player.dropItem(log, false);
-                    }
+                    log = QuestBinding.placeNewLog(player, QuestLog.createFrom(held, player));
                 }
-                QuestBinding.offer(player, villager, log, tomes);
+                if (log.isEmpty()) {
+                    refuse(player, villager, held,
+                            "No room to put the log - free up a slot and try again.");
+                } else {
+                    QuestBinding.offer(player, villager, log, tomes);
+                }
             } else if (delivering) {
                 SlotRequests.deliver(player, villager, held, tomes);
             } else if (banking) {
@@ -422,6 +422,38 @@ public final class TomeLearningHandler {
     private static String percent(float value) {
         return (value == Math.rint(value) ? String.valueOf((int) value) : String.valueOf(value))
                 + "%";
+    }
+
+    /** The last world tick on which each player's click was consumed by this mod. */
+    private static final Map<java.util.UUID, Long> CLAIMED = new java.util.HashMap<java.util.UUID, Long>();
+
+    private static void claimClick(EntityPlayer player) {
+        CLAIMED.put(player.getUniqueID(), Long.valueOf(player.world.getTotalWorldTime()));
+    }
+
+    /**
+     * Stops the item in hand from also being used when we have already answered the click.
+     *
+     * <p>Cancelling the entity interaction is not enough on its own. The client's
+     * {@code rightClickMouse} tries the entity first and, seeing no success come back from
+     * its own copy of the world, falls through to using the held item - so a book and quill
+     * opened its writing screen a moment after the villager had already dealt with it, and
+     * the log only appeared once that screen was closed.
+     *
+     * <p>Keyed on the tick rather than on the item so it covers anything else that might
+     * gain a right-click behaviour later, and scoped to a single tick so it can never
+     * swallow a genuine, separate click.
+     */
+    @SubscribeEvent
+    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        if (event.getWorld().isRemote) {
+            return;
+        }
+        Long claimed = CLAIMED.get(event.getEntityPlayer().getUniqueID());
+        if (claimed != null
+                && event.getWorld().getTotalWorldTime() - claimed.longValue() <= 1L) {
+            event.setCanceled(true);
+        }
     }
 
     /**
