@@ -72,7 +72,8 @@ public class ModConfig {
             "NEVER_LOCK_TAUGHT_TRADES", "NEVER_LOCK_ANY_TRADE", "TRADE_GRANTS_XP");
 
     private static final List<String> ORDER_CHANCE = Arrays.asList(
-            "ENABLE_CHANCE", "BASE_SUCCESS_CHANCE", "MAX_SUCCESS_CHANCE", "MIN_SUCCESS_CHANCE",
+            "ENABLE_CHANCE", "BASE_SUCCESS_CHANCE", "CHANCE_PER_SLOT", "MAX_SUCCESS_CHANCE",
+            "MIN_SUCCESS_CHANCE",
             "PITY_PER_FAILURE", "PITY_CAP", "CONSUME_BOOK_ON_FAILURE",
             "CONSUME_CATALYSTS_ON_FAILURE");
 
@@ -164,7 +165,8 @@ public class ModConfig {
 
     // chance
     public static boolean ENABLE_CHANCE = true;
-    public static float BASE_SUCCESS_CHANCE = 50.0F;
+    public static float BASE_SUCCESS_CHANCE = 30.0F;
+    public static float CHANCE_PER_SLOT = 10.0F;
     public static float MAX_SUCCESS_CHANCE = 80.0F;
     public static float MIN_SUCCESS_CHANCE = 1.0F;
     public static float PITY_PER_FAILURE = 5.0F;
@@ -1017,6 +1019,7 @@ public class ModConfig {
         if (MAX_SUCCESS_CHANCE > 100.0F) MAX_SUCCESS_CHANCE = 100.0F;
         if (MIN_SUCCESS_CHANCE > MAX_SUCCESS_CHANCE) MIN_SUCCESS_CHANCE = MAX_SUCCESS_CHANCE;
         if (MIN_SUCCESS_CHANCE < 0.0F) MIN_SUCCESS_CHANCE = 0.0F;
+        if (CHANCE_PER_SLOT < 0.0F) CHANCE_PER_SLOT = 0.0F;
         if (PITY_PER_FAILURE < 0.0F) PITY_PER_FAILURE = 0.0F;
         if (PITY_CAP < BASE_SUCCESS_CHANCE) PITY_CAP = BASE_SUCCESS_CHANCE;
         if (PITY_CAP > 100.0F) PITY_CAP = 100.0F;
@@ -1175,14 +1178,20 @@ public class ModConfig {
      * {@link #PITY_CAP}. Deliberately separate from the banked half so both the chat readout
      * and the roll can be built from the same two pieces and cannot disagree.
      */
-    public static float getFloorChance(int failures) {
-        float floor = BASE_SUCCESS_CHANCE + Math.max(0, failures) * PITY_PER_FAILURE;
-        return Math.min(floor, Math.max(BASE_SUCCESS_CHANCE, PITY_CAP));
+    public static float getFloorChance(int slotsFilled, int failures) {
+        float base = getBaseChance(slotsFilled);
+        float floor = base + Math.max(0, failures) * PITY_PER_FAILURE;
+        return Math.min(floor, Math.max(base, PITY_CAP));
+    }
+
+    /** What a villager is worth before pity or catalysts, given how many slots it has filled. */
+    public static float getBaseChance(int slotsFilled) {
+        return BASE_SUCCESS_CHANCE + Math.max(0, slotsFilled) * CHANCE_PER_SLOT;
     }
 
     /** The final odds of an attempt: floor plus banked catalysts, clamped to the limits. */
-    public static float getTotalChance(int failures, float banked) {
-        float total = getFloorChance(failures) + Math.max(0.0F, banked);
+    public static float getTotalChance(int slotsFilled, int failures, float banked) {
+        float total = getFloorChance(slotsFilled, failures) + Math.max(0.0F, banked);
         if (total > MAX_SUCCESS_CHANCE) total = MAX_SUCCESS_CHANCE;
         if (total < MIN_SUCCESS_CHANCE) total = MIN_SUCCESS_CHANCE;
         return total;

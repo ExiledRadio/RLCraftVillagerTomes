@@ -11,8 +11,11 @@ import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
+import net.minecraft.item.ItemEnchantedBook;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.EnumActionResult;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
@@ -23,6 +26,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -54,6 +58,16 @@ public final class TomeLearningHandler {
         // Every decision is the server's. The client fires this event too, and letting it
         // run there would consume the book twice over in single player.
         if (event.getWorld().isRemote || !(event.getTarget() instanceof EntityVillager)) {
+            return;
+        }
+
+        // One physical right-click can reach the server twice. Minecraft.rightClickMouse
+        // loops over EnumHand.values(), sending an interact packet for the main hand and
+        // then the off hand, and only stops early if the CLIENT sees a SUCCESS result.
+        // Everything here is server-side, so a vanilla client never breaks that loop and we
+        // get the same click delivered twice - which showed up as every chat message being
+        // printed twice, and would have rolled the dice twice for one book.
+        if (event.getHand() != EnumHand.MAIN_HAND) {
             return;
         }
 
@@ -147,7 +161,18 @@ public final class TomeLearningHandler {
             return;
         }
 
-        Plan plan = plan(offered, tomes);
+        // Only the top enchantment is attempted, and only it is peeled off the book. A book
+        // holding Unbreaking III, Mending and Efficiency V is three separate gambles, and
+        // whichever way the first one goes you walk away still holding the other two.
+        //
+        // "Top" is the first entry in the book's stored list, which is the line the tooltip
+        // draws first - so what gets taken is exactly what the player sees at the top.
+        // EnchantmentHelper.getEnchantments builds a LinkedHashMap in that same order.
+        Map<Enchantment, Integer> attempt = new LinkedHashMap<Enchantment, Integer>();
+        Map.Entry<Enchantment, Integer> top = offered.entrySet().iterator().next();
+        attempt.put(top.getKey(), top.getValue());
+
+        Plan plan = plan(attempt, tomes);
         if (plan.refusal != null) {
             refuse(player, villager, held, plan.refusal);
             return;
@@ -156,22 +181,23 @@ public final class TomeLearningHandler {
         // The roll. One per book, not per enchantment: a multi-enchantment book is already
         // all-or-nothing everywhere else, and rolling each line separately would let half a
         // book land, which there is no way to represent.
+        ResourceLocation gambledOn = plan.primaryEnchantment();
         if (ModConfig.ENABLE_CHANCE && !player.capabilities.isCreativeMode) {
-            ResourceLocation gambledOn = plan.primaryEnchantment();
             float chance = ModConfig.getTotalChance(
-                    tomes.getFailures(gambledOn), tomes.getBankedChance());
+                    tomes.count(), tomes.getFailures(gambledOn), tomes.getBankedChance());
 
             if (villager.world.rand.nextFloat() * 100.0F >= chance) {
                 failAttempt(player, villager, held, tomes, gambledOn, chance);
                 return;
             }
             tomes.clearFailures(gambledOn);
-            tomes.clearBankedChance();
         }
 
         apply(plan, tomes);
+        // Filling a slot spends whatever was banked, so the next book starts fresh.
+        tomes.clearBankedChance();
         if (!player.capabilities.isCreativeMode) {
-            held.shrink(1);
+            consumeEnchantment(held, gambledOn);
         }
         TomeTradeSync.sync(villager, player, tomes);
         celebrate(player, villager, plan);
@@ -193,7 +219,7 @@ public final class TomeLearningHandler {
 
         // Measured against the floor with no pity, because pity is per enchantment and this
         // deposit is not about any particular book.
-        float current = ModConfig.getTotalChance(0, tomes.getBankedChance());
+        float current = ModConfig.getTotalChance(tomes.count(), 0, tomes.getBankedChance());
         if (current >= ModConfig.MAX_SUCCESS_CHANCE) {
             refuse(player, villager, held, "This villager is already at the maximum "
                     + percent(ModConfig.MAX_SUCCESS_CHANCE) + " chance - keep that for another.");
@@ -211,7 +237,7 @@ public final class TomeLearningHandler {
         spawnParticles(villager, EnumParticleTypes.VILLAGER_HAPPY);
 
         if (ModConfig.ANNOUNCE_LEARNED) {
-            float now = ModConfig.getTotalChance(0, tomes.getBankedChance());
+            float now = ModConfig.getTotalChance(tomes.count(), 0, tomes.getBankedChance());
             ITextComponent message = new TextComponentString(PREFIX + TextFormatting.GREEN
                     + "Banked ");
             message.appendSibling(held.getTextComponent());
@@ -225,14 +251,14 @@ public final class TomeLearningHandler {
     /** Answers the empty-handed sneak-click: where this villager currently stands. */
     private static void reportChance(EntityPlayer player, ITomeKnowledge tomes) {
         float banked = tomes.getBankedChance();
-        float total = ModConfig.getTotalChance(0, banked);
+        int filled = tomes.count();
+        int remaining = Math.max(0, ModConfig.MAX_TOMES_PER_VILLAGER - filled);
+        float total = ModConfig.getTotalChance(filled, 0, banked);
 
         player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
-                + "Current chance of success: " + TextFormatting.WHITE + percent(total)));
-        player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  base "
-                + percent(ModConfig.BASE_SUCCESS_CHANCE)
-                + (banked > 0.0F ? ", banked +" + percent(banked) : ", nothing banked")
-                + ", ceiling " + percent(ModConfig.MAX_SUCCESS_CHANCE)));
+                + "Current chance of success: " + TextFormatting.WHITE + percent(total)
+                + TextFormatting.GRAY + " (" + remaining + " slot"
+                + (remaining == 1 ? "" : "s") + " remaining)"));
 
         // Pity is per enchantment, so it cannot be folded into the headline number - but
         // hiding it entirely would leave a player wondering why a book they have failed
@@ -242,8 +268,42 @@ public final class TomeLearningHandler {
             if (failures > 0) {
                 player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  "
                         + tome.getEnchantment() + " has failed " + failures + "x here - "
-                        + percent(ModConfig.getTotalChance(failures, banked)) + " for that one"));
+                        + percent(ModConfig.getTotalChance(filled, failures, banked))
+                        + " for that one"));
             }
+        }
+    }
+
+    /**
+     * Peels one enchantment off a book, leaving the rest of it in the player's hand.
+     *
+     * <p>{@code ItemEnchantedBook.getEnchantments} hands back the stack's live
+     * {@code StoredEnchantments} list rather than a copy, so removing an entry from it edits
+     * the book directly. When that was the last enchantment there is no book left to hold
+     * and the stack goes instead - an enchanted book with an empty list would render as a
+     * blank, untradeable oddity.
+     *
+     * <p>Safe to do in place because vanilla enchanted books have a maximum stack size of
+     * one, so there is no second book in the stack to corrupt.
+     */
+    private static void consumeEnchantment(ItemStack book, ResourceLocation id) {
+        Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(id);
+        if (enchantment == null) {
+            book.shrink(1);
+            return;
+        }
+
+        NBTTagList stored = ItemEnchantedBook.getEnchantments(book);
+        int wanted = Enchantment.getEnchantmentID(enchantment);
+        for (int i = 0; i < stored.tagCount(); i++) {
+            if (stored.getCompoundTagAt(i).getShort("id") == wanted) {
+                stored.removeTag(i);
+                break;
+            }
+        }
+
+        if (stored.tagCount() == 0) {
+            book.shrink(1);
         }
     }
 
@@ -252,7 +312,9 @@ public final class TomeLearningHandler {
                                     ITomeKnowledge tomes, ResourceLocation gambledOn,
                                     float chance) {
         if (ModConfig.CONSUME_BOOK_ON_FAILURE) {
-            held.shrink(1);
+            // Only the enchantment that was gambled on burns. The rest of a multi-enchantment
+            // book survives to be attempted separately.
+            consumeEnchantment(held, gambledOn);
         }
         if (ModConfig.CONSUME_CATALYSTS_ON_FAILURE) {
             tomes.clearBankedChance();
@@ -267,7 +329,7 @@ public final class TomeLearningHandler {
 
         if (ModConfig.ANNOUNCE_REJECTED) {
             float next = ModConfig.getTotalChance(
-                    tomes.getFailures(gambledOn), tomes.getBankedChance());
+                    tomes.count(), tomes.getFailures(gambledOn), tomes.getBankedChance());
             player.sendMessage(new TextComponentString(PREFIX + TextFormatting.RED
                     + "The binding failed at " + percent(chance) + "."
                     + TextFormatting.GRAY + " Next attempt at that enchantment here: "
