@@ -200,6 +200,18 @@ public final class TomeLearningHandler {
         Map.Entry<Enchantment, Integer> top = offered.entrySet().iterator().next();
         attempt.put(top.getKey(), top.getValue());
 
+        // Checked before the slot is looked at, so a doomed attempt does not even roll the
+        // villager a bounty. Slots cost too much now to let anyone spend one taking over a
+        // trade the villager could already do.
+        int natural = TomeTradeSync.naturalTradeLevel(
+                villager, player, tomes, top.getKey().getRegistryName());
+        if (natural > 0) {
+            refuse(player, villager, held, "This villager already sells "
+                    + plainName(top.getKey()) + " " + numeral(natural)
+                    + " of its own - buy it from them rather than spending a slot on it.");
+            return;
+        }
+
         String locked = SlotRequests.checkSlotAvailable(player, villager, tomes);
         if (locked != null) {
             refuse(player, villager, held, locked);

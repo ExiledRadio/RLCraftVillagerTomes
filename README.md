@@ -108,9 +108,9 @@ tome cap.
 - **Curing a zombie villager does not preserve tomes.** A zombie villager is a different entity
   class, so the cured villager is a brand new one with nothing learned. Protect your good
   villagers.
-- **Taught trades absorb matching vanilla ones.** If a librarian naturally rolled an
-  Unbreaking trade and you then teach it Unbreaking, you get one trade, not two at different
-  prices.
+- **A villager will not learn what it already sells.** If a librarian naturally rolled an
+  Unbreaking trade, an Unbreaking book is refused and handed back — buy it from them instead.
+  Slots are too expensive to spend one taking over a trade the villager could already do.
 - **Server-side.** Clients do not need the mod; `acceptableRemoteVersions` is `*`.
 
 ## Building

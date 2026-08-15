@@ -147,7 +147,7 @@ Screenshots of every category are on the Images tab.
 
 **Curing a zombie villager does not preserve tomes.** A zombie villager is a different entity class entirely, so the cured villager is a brand new one that has learned nothing. Protect your good villagers.
 
-**Taught trades absorb matching vanilla ones.** If a librarian naturally rolled an Unbreaking trade and you then teach it Unbreaking, you end up with one trade rather than two at different prices.
+**A villager will not learn what it already sells.** If a librarian naturally rolled an Unbreaking trade, offering it an Unbreaking book is refused and handed straight back — buy it from them instead. Slots are too expensive to let one be spent taking over a trade the villager could already do.
 
 **Multi-enchantment books are all-or-nothing.** Every enchantment on the book needs to be allowed and to have a free slot, or the whole book is refused. Watching a Mending + Unbreaking book vanish to teach only the Unbreaking would be a genuinely bad surprise, and there is no way to hand half a book back.
 

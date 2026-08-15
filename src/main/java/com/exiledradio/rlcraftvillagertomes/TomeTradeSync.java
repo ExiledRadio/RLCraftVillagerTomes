@@ -250,6 +250,38 @@ public final class TomeTradeSync {
     }
 
     /**
+     * The level a villager already sells an enchantment at under its own steam, or 0.
+     *
+     * <p>Used to refuse a teaching attempt before anything is spent. Once slots have to be
+     * bought, letting somebody pay one to replace a trade the villager could already do is
+     * a genuinely expensive mistake, and it is cheaper to stop than to explain.
+     *
+     * <p>Only meaningful for an enchantment the villager has NOT been taught. Once it is a
+     * tome, any trade selling it is ours - which is also why this cannot be asked about an
+     * upgrade, and does not need to be: a natural trade would have blocked the original
+     * teach.
+     */
+    public static int naturalTradeLevel(EntityVillager villager, EntityPlayer player,
+                                        ITomeKnowledge tomes, ResourceLocation enchantment) {
+        if (enchantment == null || tomes.knows(enchantment)) {
+            return 0;
+        }
+        MerchantRecipeList recipes = realBuyingList(villager, player);
+        if (recipes == null) {
+            return 0;
+        }
+        for (MerchantRecipe recipe : recipes) {
+            if (enchantment.equals(soleEnchantmentSold(recipe))) {
+                Map<Enchantment, Integer> sold =
+                        EnchantmentHelper.getEnchantments(recipe.getItemToSell());
+                Integer level = sold.values().iterator().next();
+                return level == null ? 1 : level.intValue();
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Removes and returns every trade in the list that this mod is responsible for.
      *
      * <p>"Responsible for" means: sells an enchanted book carrying exactly one enchantment,
@@ -260,10 +292,17 @@ public final class TomeTradeSync {
      * stacking with normal ones. Matching on content costs nothing and leaves the item
      * clean.
      *
-     * <p>The one consequence worth knowing: if a librarian naturally rolled a trade for an
-     * enchantment you later taught it, that vanilla trade is absorbed and replaced by the
-     * taught one. In practice that is the behaviour people want anyway - one trade per
-     * enchantment instead of two at different prices.
+     * <p>Matching on the enchantment rather than the enchantment and level is what makes a
+     * level-up clean: the old Unbreaking II trade has to come out when the tome becomes
+     * Unbreaking III, and by then nothing holds level II to match against.
+     *
+     * <p>The consequence is that a natural trade for an enchantment already taught here
+     * would be swept away with ours. Teaching an enchantment a villager already sells is
+     * refused outright - see {@link #naturalTradeLevel} - so the only way to reach that
+     * state is for the villager to level up and happen to roll the same enchantment
+     * afterwards, out of the several hundred in the registry. Left alone deliberately:
+     * guarding it would mean telling our trades from vanilla ones by price, which breaks
+     * the moment somebody edits the config.
      */
     private static List<MerchantRecipe> extractTomeTrades(MerchantRecipeList recipes,
                                                           ITomeKnowledge tomes) {
