@@ -349,6 +349,7 @@ public class ModConfig {
             "minecraft:glowstone=mid",
             "minecraft:iron_block=mid",
             "minecraft:gold_block=mid",
+            "minecraft:golden_apple:0=mid,1-3",
             "minecraft:diamond_pickaxe=mid,1-2",
             "minecraft:diamond_axe=mid,1-2",
             "minecraft:diamond_shovel=mid,1-2",
@@ -361,6 +362,7 @@ public class ModConfig {
 
             // --- high: trophies, and things you had to kill something for ---
             "familiarfauna:pixie_dust=high",
+            "minecraft:golden_apple:1=high,1-1",
             "minecraft:ghast_tear=high,1-3",
             "firstaid:morphine=high,1-3",
             "defiledlands:book_wyrm_scale_golden=high,1-3",
