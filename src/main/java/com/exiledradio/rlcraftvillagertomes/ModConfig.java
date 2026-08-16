@@ -284,7 +284,7 @@ public class ModConfig {
             "minecraft:iron_ingot=low",
             "minecraft:gold_ingot=low",
             "iceandfire:copper_ingot=low",
-            "xat:glowing_powder=low,2-5",
+            "xat:glowing_powder=low,2-4",
             "minecraft:stone_pickaxe=low,2-5",
             "minecraft:stone_axe=low,2-5",
             "minecraft:stone_shovel=low,2-5",
