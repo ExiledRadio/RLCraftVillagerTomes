@@ -204,6 +204,14 @@ public class ModConfig {
     public static boolean CONSUME_CATALYSTS_ON_FAILURE = true;
 
     // catalysts
+    // Only common, rare and mythic are used out of the box - they are the three rungs of the
+    // Trinkets and Baubles glowing ladder, priced from what each costs to craft: an ingot is
+    // four powder, and a gem is four ingots plus four powder plus a diamond block.
+    //
+    // The other three are deliberately defined but empty. A band with nothing in it costs
+    // nothing, and leaving the ladder complete means a pack author adding their own catalysts
+    // has somewhere to put them without first working out what the gaps between 1, 5 and 30
+    // ought to be.
     public static String[] CATALYST_TIERS = {
             "common=1.0",
             "uncommon=2.5",
@@ -277,25 +285,26 @@ public class ModConfig {
             "minecraft:gold_ingot=low",
             "iceandfire:copper_ingot=low",
             "xat:glowing_powder=low,2-4",
+            "minecraft:stone_pickaxe=low,4-12",
+            "minecraft:stone_axe=low,4-12",
+            "minecraft:stone_shovel=low,4-12",
+            "minecraft:stone_sword=low,4-12",
+            "minecraft:golden_pickaxe=low,3-8",
+            "minecraft:golden_axe=low,3-8",
+            "minecraft:golden_shovel=low,3-8",
+            "minecraft:golden_sword=low,3-8",
+            "minecraft:wool=low",
 
             // --- mid: crafted, hunted, or one step off the beaten path ---
             "minecraft:netherbrick=mid",
             "minecraft:pumpkin_pie=mid",
             "iceandfire:pixie_dust=mid",
-            "minecraft:stone_pickaxe=mid",
-            "minecraft:stone_axe=mid",
-            "minecraft:stone_shovel=mid",
-            "minecraft:stone_sword=mid",
             "minecraft:book=mid",
             "minecraft:bookshelf=mid",
             "minecraft:iron_pickaxe=mid,1-3",
             "minecraft:iron_axe=mid,1-3",
             "minecraft:iron_shovel=mid,1-3",
             "minecraft:iron_sword=mid,1-3",
-            "minecraft:golden_pickaxe=mid,1-3",
-            "minecraft:golden_axe=mid,1-3",
-            "minecraft:golden_shovel=mid,1-3",
-            "minecraft:golden_sword=mid,1-3",
             "minecraft:flint_and_steel=mid,1-2",
             "minecraft:saddle=mid,1-2",
             "minecraft:tnt=mid,2-6",
@@ -340,13 +349,18 @@ public class ModConfig {
             "minecraft:glowstone=mid",
             "minecraft:iron_block=mid",
             "minecraft:gold_block=mid",
+            "minecraft:diamond_pickaxe=mid",
+            "minecraft:diamond_axe=mid",
+            "minecraft:diamond_shovel=mid",
+            "minecraft:diamond_sword=mid",
+            "iceandfire:silver_pickaxe=mid",
+            "iceandfire:silver_axe=mid",
+            "iceandfire:silver_shovel=mid",
+            "iceandfire:silver_sword=mid",
+            "iceandfire:silver_ingot=mid",
 
             // --- high: trophies, and things you had to kill something for ---
             "familiarfauna:pixie_dust=high",
-            "minecraft:diamond_pickaxe=high",
-            "minecraft:diamond_axe=high",
-            "minecraft:diamond_shovel=high",
-            "minecraft:diamond_sword=high",
             "minecraft:ghast_tear=high,1-3",
             "firstaid:morphine=high,1-3",
             "defiledlands:book_wyrm_scale_golden=high,1-3",
@@ -373,6 +387,7 @@ public class ModConfig {
             "iceandfire:dragon_skull=high",
             "xat:glowing_gem=high",
             "charm:charged_emerald=high",
+            "iceandfire:silver_block=high",
     };
 
     // feedback
