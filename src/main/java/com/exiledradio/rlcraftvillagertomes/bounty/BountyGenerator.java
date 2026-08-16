@@ -34,10 +34,11 @@ public final class BountyGenerator {
     public static List<BountyItem> roll(int slotNumber, Random random) {
         List<BountyItem> request = new ArrayList<BountyItem>();
 
-        List<BountyTier> usable = affordableTiers(slotNumber);
-        if (usable.isEmpty()) {
+        List<BountyTier> tiers = new ArrayList<BountyTier>(BountyRegistry.getTiers());
+        if (tiers.isEmpty()) {
             return request;
         }
+        float[] weights = ModConfig.getTierWeights(slotNumber, tiers.size());
 
         int lines = ModConfig.REQUEST_ITEMS_BASE
                 + (Math.max(1, slotNumber) - 1) * ModConfig.REQUEST_ITEMS_PER_SLOT;
@@ -45,7 +46,7 @@ public final class BountyGenerator {
 
         List<BountyEntry> picked = new ArrayList<BountyEntry>();
         for (int i = 0; i < lines; i++) {
-            BountyEntry entry = pickItem(usable, picked, random);
+            BountyEntry entry = pickItem(tiers, weights, picked, random);
             if (entry == null) {
                 break;
             }
@@ -59,55 +60,76 @@ public final class BountyGenerator {
     }
 
     /**
-     * Which tiers a given slot may draw from.
+     * Picks one item: first a band by weight, then an item evenly within that band.
      *
-     * <p>The ceiling climbs with the slot number, so an opening request cannot lead with a
-     * dragon skull and a late one is not padded out with coal alone. The cheapest tier
-     * stays available at every depth on purpose - a request that is a solid wall of the top
-     * band reads as refusal rather than as a goal.
+     * <p>Choosing the band first is the whole point. Flattening every band into one pool
+     * and picking evenly makes a band's real odds its share of the item count, so adding
+     * items to a band silently makes it more likely and no amount of tuning can make a late
+     * slot harder. Two stages keep the shape of a request a decision rather than a side
+     * effect of how the list happens to be filled in.
+     *
+     * <p>Bands with nothing left to give are dropped and their weight redistributed, which
+     * is what stops a five-item request from running short once a band is exhausted.
      */
-    private static List<BountyTier> affordableTiers(int slotNumber) {
-        List<BountyTier> all = new ArrayList<BountyTier>(BountyRegistry.getTiers());
-        List<BountyTier> usable = new ArrayList<BountyTier>();
-        if (all.isEmpty()) {
-            return usable;
-        }
-
-        int allowed = Math.min(all.size(),
-                ModConfig.REQUEST_TIERS_BASE
-                        + (Math.max(1, slotNumber) - 1) * ModConfig.REQUEST_TIERS_PER_SLOT);
-        allowed = Math.max(1, allowed);
-
-        for (int i = 0; i < allowed; i++) {
-            BountyTier tier = all.get(i);
-            if (!BountyRegistry.getUsableEntriesInTier(tier.getName()).isEmpty()) {
-                usable.add(tier);
-            }
-        }
-        // Everything in range was empty or uninstalled - fall back to any tier that has
-        // something, so a sparse list still produces a request instead of nothing.
-        if (usable.isEmpty()) {
-            for (BountyTier tier : all) {
-                if (!BountyRegistry.getUsableEntriesInTier(tier.getName()).isEmpty()) {
-                    usable.add(tier);
-                }
-            }
-        }
-        return usable;
-    }
-
-    /** Picks one item, never the same one twice in a single request. */
-    private static BountyEntry pickItem(List<BountyTier> tiers, List<BountyEntry> exclude,
-                                        Random random) {
-        List<BountyEntry> pool = new ArrayList<BountyEntry>();
+    private static BountyEntry pickItem(List<BountyTier> tiers, float[] weights,
+                                        List<BountyEntry> exclude, Random random) {
+        List<List<BountyEntry>> pools = new ArrayList<List<BountyEntry>>();
         for (BountyTier tier : tiers) {
+            List<BountyEntry> pool = new ArrayList<BountyEntry>();
             for (BountyEntry entry : BountyRegistry.getUsableEntriesInTier(tier.getName())) {
                 if (!containsItem(exclude, entry)) {
                     pool.add(entry);
                 }
             }
+            pools.add(pool);
         }
-        return pool.isEmpty() ? null : pool.get(random.nextInt(pool.size()));
+
+        float total = 0.0F;
+        for (int i = 0; i < pools.size(); i++) {
+            if (!pools.get(i).isEmpty() && weightOf(weights, i) > 0.0F) {
+                total += weightOf(weights, i);
+            }
+        }
+
+        // No weights parsed, or every band with weight is exhausted. Falling back to an even
+        // pick across whatever is left beats returning nothing and cutting the request short.
+        if (total <= 0.0F) {
+            List<BountyEntry> any = new ArrayList<BountyEntry>();
+            for (List<BountyEntry> pool : pools) {
+                any.addAll(pool);
+            }
+            return any.isEmpty() ? null : any.get(random.nextInt(any.size()));
+        }
+
+        float roll = random.nextFloat() * total;
+        for (int i = 0; i < pools.size(); i++) {
+            float weight = weightOf(weights, i);
+            if (pools.get(i).isEmpty() || weight <= 0.0F) {
+                continue;
+            }
+            roll -= weight;
+            if (roll <= 0.0F) {
+                List<BountyEntry> pool = pools.get(i);
+                return pool.get(random.nextInt(pool.size()));
+            }
+        }
+
+        // Only reachable on floating point rounding at the very top of the range.
+        for (int i = pools.size() - 1; i >= 0; i--) {
+            if (!pools.get(i).isEmpty() && weightOf(weights, i) > 0.0F) {
+                List<BountyEntry> pool = pools.get(i);
+                return pool.get(random.nextInt(pool.size()));
+            }
+        }
+        return null;
+    }
+
+    /** A band with no configured weight counts as unweighted rather than as zero. */
+    private static float weightOf(float[] weights, int index) {
+        if (weights == null) {
+            return 1.0F;
+        }
+        return index < weights.length ? weights[index] : 0.0F;
     }
 
     private static boolean containsItem(List<BountyEntry> list, BountyEntry candidate) {

@@ -80,6 +80,9 @@ thead th{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;lett
 .num{font-family:ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;
   text-align:right;width:74px}
 .barcell{width:190px}
+.wbar{display:inline-block;height:7px;border-radius:1px;background:var(--wband);min-width:2px;vertical-align:middle}
+.wbar.t-low{--wband:var(--low)} .wbar.t-mid{--wband:var(--mid)} .wbar.t-high{--wband:var(--high)}
+.wnum{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--ink-soft);margin-left:7px;font-variant-numeric:tabular-nums}
 .bar{display:block;height:7px;border-radius:1px;background:var(--accent);min-width:3px}
 .members code{font-size:12px;color:var(--ink-soft)}
 .none{color:var(--ink-faint)}
@@ -265,6 +268,22 @@ footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--rule);
 <p class="note">An asterisk marks a quantity overridden for that item rather than inherited from
 its band. Requests draw from the cheapest bands first and reach further up with each slot, so a
 first request is ordinary material and a fifth can ask for a dragon heart.</p>
+
+<h2>Slot progression &mdash; how a request escalates</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Slot</th><th class="num">Items</th><th>low</th><th>mid</th><th>high</th></tr></thead>
+<tbody><tr><th scope="row">Slot 1</th><td class="num">2</td><td class="barcell"><span class="wbar t-low" style="width:90.0%"></span><span class="wnum">90%</span></td><td class="barcell"><span class="wbar t-mid" style="width:10.0%"></span><span class="wnum">10%</span></td><td class="barcell"><span class="wbar t-high" style="width:0.0%"></span><span class="wnum">0%</span></td></tr>
+<tr><th scope="row">Slot 2</th><td class="num">3</td><td class="barcell"><span class="wbar t-low" style="width:70.0%"></span><span class="wnum">70%</span></td><td class="barcell"><span class="wbar t-mid" style="width:30.0%"></span><span class="wnum">30%</span></td><td class="barcell"><span class="wbar t-high" style="width:0.0%"></span><span class="wnum">0%</span></td></tr>
+<tr><th scope="row">Slot 3</th><td class="num">4</td><td class="barcell"><span class="wbar t-low" style="width:40.0%"></span><span class="wnum">40%</span></td><td class="barcell"><span class="wbar t-mid" style="width:55.0%"></span><span class="wnum">55%</span></td><td class="barcell"><span class="wbar t-high" style="width:5.0%"></span><span class="wnum">5%</span></td></tr>
+<tr><th scope="row">Slot 4</th><td class="num">5</td><td class="barcell"><span class="wbar t-low" style="width:25.0%"></span><span class="wnum">25%</span></td><td class="barcell"><span class="wbar t-mid" style="width:50.0%"></span><span class="wnum">50%</span></td><td class="barcell"><span class="wbar t-high" style="width:25.0%"></span><span class="wnum">25%</span></td></tr>
+<tr><th scope="row">Slot 5</th><td class="num">6</td><td class="barcell"><span class="wbar t-low" style="width:15.0%"></span><span class="wnum">15%</span></td><td class="barcell"><span class="wbar t-mid" style="width:45.0%"></span><span class="wnum">45%</span></td><td class="barcell"><span class="wbar t-high" style="width:40.0%"></span><span class="wnum">40%</span></td></tr></tbody>
+</table>
+</div>
+<p class="note">A band is chosen by weight first, then an item evenly within it &mdash; so a
+band's odds are a decision rather than a side effect of how many items happen to be in it.
+Bands with nothing left to give are skipped and their weight redistributed. Slots past the
+last row keep using it.</p>
 
 <h2>Catalysts &mdash; what improves the odds</h2>
 <div class="tablewrap">

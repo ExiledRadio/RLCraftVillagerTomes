@@ -78,7 +78,7 @@ public class ModConfig {
 
     private static final List<String> ORDER_SLOTS = Arrays.asList(
             "LOCK_SLOTS", "REQUEST_ITEMS_BASE", "REQUEST_ITEMS_PER_SLOT", "REQUEST_ITEMS_MAX",
-            "REQUEST_TIERS_BASE", "REQUEST_TIERS_PER_SLOT", "QUEST_LOG_CAPACITY");
+            "REQUEST_TIER_WEIGHTS", "QUEST_LOG_CAPACITY");
 
     private static final List<String> ORDER_CHANCE = Arrays.asList(
             "ENABLE_CHANCE", "BASE_SUCCESS_CHANCE", "CHANCE_PER_SLOT", "MAX_SUCCESS_CHANCE",
@@ -184,8 +184,13 @@ public class ModConfig {
     public static int REQUEST_ITEMS_BASE = 2;
     public static int REQUEST_ITEMS_PER_SLOT = 1;
     public static int REQUEST_ITEMS_MAX = 6;
-    public static int REQUEST_TIERS_BASE = 2;
-    public static int REQUEST_TIERS_PER_SLOT = 1;
+    public static String[] REQUEST_TIER_WEIGHTS = {
+            "1=90,10,0",
+            "2=70,30,0",
+            "3=40,55,5",
+            "4=25,50,25",
+            "5=15,45,40",
+    };
     public static int QUEST_LOG_CAPACITY = 10;
 
     // chance
@@ -1033,17 +1038,31 @@ public class ModConfig {
             "The most items any single request will ever list, however deep you go.\n"
                     + "A request longer than this stops being a goal and starts being a chore.";
 
-    private static final String REQUEST_TIERS_BASE_COMMENT =
-            "How many tiers, counting up from the cheapest, the FIRST slot may draw from.\n"
-                    + "2 keeps an opening request to the bottom two bands, so nobody is asked for a\n"
-                    + "dragon skull before they have taught a single book.";
-
-    private static final String REQUEST_TIERS_PER_SLOT_COMMENT =
-            "How many more tiers each slot unlocks access to.\n"
+    private static final String REQUEST_TIER_WEIGHTS_COMMENT =
+            "How likely each band is to be picked, per slot, as slot=weight,weight,weight\n"
                     + "\n"
-                    + "The cheapest tier always stays in the pool, so a late request mixes the\n"
-                    + "expensive with the ordinary rather than being a solid wall of legendary\n"
-                    + "items. Ordering in CATALYST_TIERS is the ranking - cheapest first.";
+                    + "One weight per band, in the order BOUNTY_TIERS lists them. They are\n"
+                    + "relative, so writing them as percentages is only a convention - 90,10,0 and\n"
+                    + "9,1,0 behave identically. A weight of 0 means that band cannot appear at\n"
+                    + "that slot at all.\n"
+                    + "\n"
+                    + "The defaults walk a villager from ordinary to alarming:\n"
+                    + "\n"
+                    + "  slot 1   90 / 10 /  0    everyday material, nothing exotic\n"
+                    + "  slot 2   70 / 30 /  0    still mostly gathering\n"
+                    + "  slot 3   40 / 55 /  5    mid takes over, high starts to show up\n"
+                    + "  slot 4   25 / 50 / 25    a quarter of the list is a trophy\n"
+                    + "  slot 5   15 / 45 / 40    the last slot is meant to hurt\n"
+                    + "\n"
+                    + "Slots past the last row keep using that row. A band with no installed items\n"
+                    + "is skipped and its weight redistributed, so a sparse list still produces a\n"
+                    + "request rather than nothing.\n"
+                    + "\n"
+                    + "This replaces the old REQUEST_TIERS_BASE and REQUEST_TIERS_PER_SLOT, which\n"
+                    + "only controlled which bands were AVAILABLE. Everything available then went\n"
+                    + "into one pool and was picked evenly, so a band's real odds were just its\n"
+                    + "share of the item count - which meant adding items to a band silently made\n"
+                    + "it more likely, and no amount of tuning could make late slots harder.";
 
     private static final String QUEST_LOG_CAPACITY_COMMENT =
             "How many villagers one quest log can track.\n"
@@ -1074,13 +1093,10 @@ public class ModConfig {
                 "REQUEST_ITEMS_MAX", CATEGORY_SLOTS, 6, 1, 16,
                 REQUEST_ITEMS_MAX_COMMENT);
 
-        REQUEST_TIERS_BASE = config.getInt(
-                "REQUEST_TIERS_BASE", CATEGORY_SLOTS, 2, 1, 16,
-                REQUEST_TIERS_BASE_COMMENT);
-
-        REQUEST_TIERS_PER_SLOT = config.getInt(
-                "REQUEST_TIERS_PER_SLOT", CATEGORY_SLOTS, 1, 0, 8,
-                REQUEST_TIERS_PER_SLOT_COMMENT);
+        REQUEST_TIER_WEIGHTS = config.getStringList(
+                "REQUEST_TIER_WEIGHTS", CATEGORY_SLOTS, REQUEST_TIER_WEIGHTS,
+                REQUEST_TIER_WEIGHTS_COMMENT);
+        parseTierWeights();
 
         QUEST_LOG_CAPACITY = config.getInt(
                 "QUEST_LOG_CAPACITY", CATEGORY_SLOTS, 10, 1, 50,
@@ -1450,8 +1466,6 @@ public class ModConfig {
         if (REQUEST_ITEMS_BASE < 1) REQUEST_ITEMS_BASE = 1;
         if (REQUEST_ITEMS_PER_SLOT < 0) REQUEST_ITEMS_PER_SLOT = 0;
         if (REQUEST_ITEMS_MAX < REQUEST_ITEMS_BASE) REQUEST_ITEMS_MAX = REQUEST_ITEMS_BASE;
-        if (REQUEST_TIERS_BASE < 1) REQUEST_TIERS_BASE = 1;
-        if (REQUEST_TIERS_PER_SLOT < 0) REQUEST_TIERS_PER_SLOT = 0;
         if (CHANCE_PER_SLOT < 0.0F) CHANCE_PER_SLOT = 0.0F;
         if (MAX_CHANCE_PER_SLOT < 0.0F) MAX_CHANCE_PER_SLOT = 0.0F;
         if (CONFIRM_DEBOUNCE_MS < 0) CONFIRM_DEBOUNCE_MS = 0;
@@ -1669,6 +1683,64 @@ public class ModConfig {
             }
         }
         return false;
+    }
+
+    /** Parsed {@link #REQUEST_TIER_WEIGHTS}, keyed by the slot each row applies from. */
+    private static final java.util.TreeMap<Integer, float[]> TIER_WEIGHTS =
+            new java.util.TreeMap<Integer, float[]>();
+
+    private static void parseTierWeights() {
+        TIER_WEIGHTS.clear();
+        for (String raw : REQUEST_TIER_WEIGHTS) {
+            String line = raw == null ? "" : raw.trim();
+            if (line.isEmpty() || line.startsWith("#")) {
+                continue;
+            }
+            int equals = line.indexOf('=');
+            if (equals < 1) {
+                RLCraftVillagerTomes.LOGGER.warn(
+                        "Ignoring tier weight line \"{}\" - expected slot=weight,weight,...", line);
+                continue;
+            }
+            try {
+                int slot = Integer.parseInt(line.substring(0, equals).trim());
+                String[] parts = line.substring(equals + 1).split(",");
+                float[] weights = new float[parts.length];
+                for (int i = 0; i < parts.length; i++) {
+                    weights[i] = Math.max(0.0F, Float.parseFloat(parts[i].trim()));
+                }
+                TIER_WEIGHTS.put(Integer.valueOf(Math.max(1, slot)), weights);
+            } catch (NumberFormatException e) {
+                RLCraftVillagerTomes.LOGGER.warn(
+                        "Ignoring tier weight line \"{}\" - slot and weights must be numbers", line);
+            }
+        }
+    }
+
+    /**
+     * The relative weight of each band for a given slot, in {@code BOUNTY_TIERS} order.
+     *
+     * <p>Slots past the last configured row keep using that row, so a five-row table covers
+     * a villager however many slots it is allowed. Bands the table does not mention weigh
+     * nothing, which is what lets a three-band default sit safely above a longer list.
+     *
+     * @return null when nothing parsed, which the caller treats as "pick evenly"
+     */
+    public static float[] getTierWeights(int slotNumber, int tierCount) {
+        if (TIER_WEIGHTS.isEmpty() || tierCount <= 0) {
+            return null;
+        }
+        java.util.Map.Entry<Integer, float[]> row =
+                TIER_WEIGHTS.floorEntry(Integer.valueOf(Math.max(1, slotNumber)));
+        if (row == null) {
+            row = TIER_WEIGHTS.firstEntry();
+        }
+        float[] source = row.getValue();
+        float[] out = new float[tierCount];
+        for (int i = 0; i < tierCount; i++) {
+            out[i] = i < source.length ? source[i] : 0.0F;
+        }
+        return out;
     }
 
     /** True when two books of the same level step a trade up by one. */
