@@ -1,1 +1,1 @@
-Turn the enchanted books you find into permanent villager trades. Hand a villager a book and it learns that enchantment, priced in emeralds. Give it a matching book later and the trade levels up by anvil rules. Works with modded enchantments.
+Teach a librarian the enchanted books you find and it sells them back forever. Buy the slot with a bounty, stack the odds with catalysts, then gamble the book. Works with modded enchantments, and clients do not need it installed.

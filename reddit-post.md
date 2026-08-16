@@ -129,3 +129,68 @@ re-taking the screenshot after the smoke test so the image matches what actually
 
 Two minutes settles both: teach a book, teach the same book again, open the villager, check
 the trade reads one level higher.
+
+---
+---
+
+# 2.0.0 update post
+
+Everything above is the original 1.0 launch and stays as written. This is a separate post for
+the rework — 2.0 changes how the mod opens, so it earns its own thread rather than an edit
+buried at the bottom of an old one.
+
+## Title
+
+**Recommended:**
+
+> Update: villagers no longer just take your books. You buy the slot, stack the odds, and the book can still burn
+
+Alternatives:
+
+> My villager enchant mod got a rework - slots cost a bounty, teaching is a roll, and a failed book is gone
+
+> 2.0: every tome slot has to be paid for now, and handing over a Sharpness V is a gamble
+
+Lead with the *cost*, not the feature list. The interesting thing about this update is that it
+took something that used to be free and made it a decision — that is the hook, and a changelog
+in a title reads as a patch note nobody asked for.
+
+## Body
+
+```
+Update on the villager tome mod I posted a while back. It used to be simple: hand a librarian an enchanted book, it sells that enchantment forever. That turned out to be too easy, so 2.0 makes you work for it.
+
+Slots have to be bought now. Every librarian rolls its own shopping list - two items for its first slot, six by its fifth, and the later ones start asking for dragon hearts instead of coal. Deliver the lot and it opens up. The list never re-rolls, so a villager that wants something you can't get is a villager you walk away from.
+
+Handing the book over is a roll. A fresh librarian takes it 30% of the time, and every slot it has open adds 10. You can stack the odds beforehand by feeding it glowing powder, ingots or gems - a gem alone takes a fresh one from base to ceiling - and it tells you the odds and asks before it commits.
+
+If it fails, the book is gone and so is everything you banked. What you get instead is a grudge: each failure raises the floor by 5% per level of the book that burned, on that villager, for that enchantment. Lose a Sharpness V and you're 25 points closer next time. That bonus stacks above the ceiling, so enough bad luck eventually gets you there anyway.
+
+There's a quest log too - sneak-click a librarian with a book and quill and it writes down what that villager wants and where it lives, then crosses it off when you're done. It's a normal written book rather than a custom item, which is why the mod still runs on a vanilla client with nothing installed.
+
+All of it is off-switchable if you liked it the old way. 152 items ship in the bounty list, and anything from a mod you don't have is skipped, so it works on any 1.12.2 pack and not just RLCraft.
+
+CurseForge: PASTE-CURSEFORGE-URL-HERE
+
+Source (MIT): https://github.com/ExiledRadio/RLCraftVillagerTomes
+```
+
+**Format:** bold `Slots have to be bought now.`, `Handing the book over is a roll.` and
+`If it fails, the book is gone and so is everything you banked.` Nothing else — three bolds
+across five paragraphs is enough to carry a skim.
+
+**Images:** one of a villager's request list, one of a failed attempt with the pity line. Both
+are new screens that did not exist in 1.0, so they are worth taking fresh rather than reusing
+anything from the launch post.
+
+## First comment
+
+```
+Worth saying: everything here can be turned off. ENABLE_CHANCE=false goes back to books always working, and LOCK_SLOTS=false gives every villager its slots for free - including ones already in your world. Between them you get the old mod back.
+
+Villagers you taught on 1.x carry over. They keep their trades, and they're treated as having already unlocked the slots they filled, so an established librarian just owes a bounty for its next one rather than losing what it had.
+
+Still server-side only. Clients don't need it installed and there are no custom packets - the quest log is a vanilla written book that the server rewrites, specifically so that stayed true.
+```
+
+**Format:** bold `everything here can be turned off.`

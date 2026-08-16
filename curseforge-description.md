@@ -1,8 +1,7 @@
 <!--
-Two images only, both gameplay. The config screenshots are deliberately not in here -
-a wall of settings tables breaks the read and nobody decides to install a mod because
-they saw its config screen. They are still uploaded to the project's Images tab, where
-people who want them will look.
+Two images only, both gameplay. Config screenshots are deliberately not in here -
+a wall of settings tables breaks the read and nobody installs a mod because they saw
+its config screen. They are still on the project's Images tab.
 
 USED:
   learned message   https://media.forgecdn.net/attachments/1852/310/villagertomeslearnedmessage-png.png
@@ -18,138 +17,172 @@ UPLOADED BUT UNUSED, kept here so the URLs are not lost:
 
 # RLCraft Villager Tomes
 
-**The enchanted books you find become permanent villager trades.**
+**Teach a librarian the enchanted books you find, and it sells them back to you forever.**
 
 You found a Mending book. You used it once, on one tool, and that was the end of it. Every duplicate after that is anvil fodder.
 
-Hand it to a villager instead and it becomes a trade you can go back to forever.
+Hand it to a librarian instead and it becomes a trade you can go back to — but you have to earn the room, and the book might not take.
 
-Works out of the box. No config editing, no dependencies.
-
----
-
-## How it works
-
-**Hold an enchanted book and sneak-right-click a villager.** The book is consumed and that enchantment becomes a permanent trade on that villager, priced in emeralds.
-
-**Bring a higher book later and the trade levels up.** Buy two Unbreaking II off the villager, combine them at an anvil yourself, and hand the III back — its trade becomes Unbreaking III.
-
-**Librarians only**, by default. Books are a librarian's business, and the grind this removes is rerolling one over and over for the enchantment you want — not finding a librarian in the first place. `ALLOWED_PROFESSIONS` opens it up to any profession, or all of them, if you disagree.
+Works out of the box. No dependencies, and clients do not need it installed.
 
 ![A villager learning a book](https://media.forgecdn.net/attachments/1852/310/villagertomeslearnedmessage-png.png)
 
 ---
 
-## Why sneak-right-click?
+## The loop
 
-Because of a quirk specific to 1.12: vanilla refuses to open a villager's trade screen while you are sneaking at all. `EntityVillager.processInteract` checks `!player.isSneaking()` before doing anything.
+| | |
+|---|---|
+| **Pay for a slot** | Every librarian wants a list of items before it will hold a book. Deliver it. |
+| **Stack the odds** | Feed it glowing powder, ingots or gems. Each one raises its chance. |
+| **Check where you stand** | Sneak-click it empty-handed for the current odds and what it still wants. |
+| **Commit the book** | Sneak-click with the book. It asks once, then rolls. |
 
-That makes sneaking a gesture that would otherwise do nothing, which is exactly what you want for a new interaction — the plain right-click stays free for trading, even with a book in your hand. Nothing about ordinary villager behaviour changes unless you are deliberately holding an enchanted book at one.
-
-`TEACH_TRIGGER` flips it to plain right-click if you prefer, with the caveat that you then have to put the book away to open the trade screen.
-
----
-
-## Upgrading
-
-| You give it | It knows | Result |
-|---|---|---|
-| Unbreaking III | Unbreaking II | **Unbreaking III** |
-| Unbreaking II | Unbreaking II | Refused — go make a III |
-| Unbreaking I | Unbreaking II | Refused, book handed back |
-| Unbreaking III | Unbreaking III | Refused, already at maximum |
-
-**The anvil stays in the loop.** A villager will not level itself up on copies of what it already sells, so every level costs you an anvil trip and the experience to pay for it. `UPGRADE_MODE` has three other settings if you want it cheaper — `pair_or_higher` lets two matching books step it up directly with no anvil at all.
-
-**Upgrading never uses a slot.** A villager at its cap can still be improved, so a full villager is not a finished one.
-
-**A refused book is never consumed.** It goes straight back in your hand with a message saying why.
-
-![Upgrading a trade](https://media.forgecdn.net/attachments/1852/314/villagetomesupgrademessage-png.png)
+Sneaking is the trigger throughout, for a reason specific to 1.12: vanilla refuses to open a villager's trade screen while you are sneaking. That makes it a gesture that would otherwise do nothing, and leaves the plain right-click free for trading — even with a book in hand. Nothing about ordinary villager behaviour changes unless you are deliberately sneaking at one.
 
 ---
 
-## The cap
+## Slots are bought, not given
 
-**Five different enchantments per villager**, configurable.
+A librarian starts with nothing and rolls its own demand for each slot it opens.
 
-This is what stops one villager becoming the entire enchanting system. At five you end up with a shelf of specialists — the armour one, the tool one — and losing one to a zombie actually costs you something.
+```
+Needed for slot 3:
+  Blaze Rod 0/6
+  Block of Coal 0/3
+  Glowing Ingot 0/2
+  Diamond 0/4
+```
 
-Lowering the cap later never deletes anything. A villager over the new limit keeps and sells everything it already knows, it just cannot learn more.
+Requests get longer and richer the deeper you go — two items for the first slot, six by the fifth, and the bands they draw from climb with them. An opening request is material you already have stacks of. A fifth can ask for a dragon heart.
+
+**A request is never re-rolled.** If a villager wants something you cannot get, the answer is a different villager. That is what makes the ones you have already paid into worth protecting.
+
+Five slots per librarian by default, and every one of them costs.
 
 ---
 
-## Price
+## Teaching is a roll
 
-**Ten emeralds per level, plus one book.**
+A librarian on its first slot accepts a book **30%** of the time. Every slot it has opened adds **+10**, so one four slots deep sits at 60 before you have done anything.
 
-- Mending I — 10 emeralds
-- Unbreaking III — 30 emeralds
-- Sharpness V — 50 emeralds
+**Catalysts** are banked into a villager beforehand and raise it further:
 
-The book takes the first input slot and the emeralds the second, matching vanilla's own librarian recipe, so a taught trade looks the same as a naturally rolled one sitting next to it.
+| | |
+|---|---|
+| Glowing Powder | +1% |
+| Glowing Ingot | +5% |
+| Glowing Gem | +30% |
 
-The full formula is `(base + perLevel × level) × rarity × treasure`, and every term is a setting. Separate multipliers for common, uncommon, rare and very rare, plus an extra one for treasure enchantments — set `TREASURE_COST_MULTIPLIER` to 3 and Mending costs 30 instead of 10 while everything else stays put.
+Those numbers come straight from what each costs to craft — an ingot is four powder, a gem is four ingots plus four powder plus a diamond block. A single gem takes a fresh villager from its base to its ceiling.
 
-One ceiling worth knowing: a trade can only ask for a single stack, so 64 emeralds is a hard maximum. At ten per level everything from level VII up costs the same. That never comes up with vanilla enchantments, which stop at V, but packs that push past that will see high levels flatten out.
+The ceiling starts at **80%** and rises **+5 per slot unlocked**, so a developed villager can be pushed past it. Preparation never quite guarantees the result on a young one, which is the point.
+
+Every attempt asks before it commits, and reports the odds while it asks.
+
+---
+
+## Failure costs you
+
+A failed roll **destroys the book and everything you had banked**. That is what gives the gamble teeth.
+
+What you get back is a floor. Each failure adds **+5% per level of the book that burned** — so losing a Sharpness V is worth 25, and a Sharpness I is worth 5 — tracked per villager *and* per enchantment. Failing Mending on one librarian makes Mending easier on that librarian only.
+
+That bonus stacks **on top of the ceiling**, not under it. Enough bad luck will carry a book past what any amount of preparation could buy.
+
+![Levelling a trade up](https://media.forgecdn.net/attachments/1852/314/villagetomesupgrademessage-png.png)
+
+---
+
+## Levelling a trade up
+
+Bring a book **above** what the villager already sells and the trade becomes that level.
+
+So pushing a trade from Unbreaking II to III means buying two Unbreaking II from it, combining them at an anvil yourself, and bringing the III back. The anvil stays in the loop — a villager will not level itself up on copies of what it already sells.
+
+A **multi-enchantment book is attempted one line at a time.** Only the top enchantment is gambled on, and only it is peeled off the book. A book of Unbreaking III, Mending and Efficiency V is three separate decisions, and either result leaves you holding the other two.
+
+A book *below* what it sells is refused and handed straight back. So is a book for an enchantment the librarian already sells naturally — slots are too expensive to spend one taking over a trade it could already do.
+
+---
+
+## The quest log
+
+Sneak-click a librarian holding a **book and quill** and it becomes a quest log. Sneak-click with the log and that villager gets written into it: a name you choose, where it lives, and everything it still needs.
+
+```
+Gareth
+x412 y68 z-1190
+
+Slot 3 needs:
+- 6 Blaze Rod
+- 3 Block of Coal
+- 2 Glowing Ingot
+```
+
+Naming a villager also sets its name tag, so the book and the world agree. Entries update as you deliver and cross themselves off when the slot is paid for. Ten villagers per book.
+
+It is a **vanilla written book**, not a custom item — which is the only reason this mod still works on a completely unmodded client.
 
 ---
 
 ## Modded enchantments work
 
-Enchantments are read from the registry at runtime rather than hard-coded, so anything any mod adds is teachable with no patch and no compatibility release.
+Enchantments are read from the registry at runtime, so anything any mod adds is teachable with no patch and no compatibility release. In RLCraft that means the whole SoManyEnchantments set behaves exactly like a vanilla enchantment here.
 
-In RLCraft that means the whole SoManyEnchantments set — Spellproof, Adept, Freezing, Inner Berserk, Penetration — behaves exactly like a vanilla enchantment here.
-
-Treasure enchantments including Mending are allowed by default, because being able to buy more Mending after finding one is the single biggest thing this does for a long run. Curses are allowed too; a looted curse book is still a book somebody looted. Both have switches if you disagree.
+Treasure enchantments including Mending are allowed by default — being able to buy more Mending after finding one is the single biggest thing this does for a long run. Curses are allowed too; a looted curse book is still a book somebody looted. Both have switches.
 
 ---
 
 ## Trades that never lock
 
-1.12 has a real design flaw with villagers, and it is worth explaining because this mod ships with a fix on by default.
+1.12 has a real design flaw with villagers. A villager only restocks as a *side effect of being traded with* — `EntityVillager.useRecipe` is the only place in the game that schedules a refresh. Exhaust every trade and there is nothing left to use, nothing schedules the refresh, and that villager is bricked permanently.
 
-A villager only restocks as a *side effect of being traded with* — `EntityVillager.useRecipe` is the only place in the game that schedules a refresh. So once every trade on a villager is exhausted, there is no trade left to use, nothing schedules the refresh, and that villager is bricked permanently. Later versions fixed this with workstations and twice-daily restocking. 1.12 never did.
-
-**`NEVER_LOCK_TAUGHT_TRADES`** is on by default and keeps this mod's own trades usable forever. You found the book; the trade expiring was never the interesting part.
-
-**`NEVER_LOCK_ANY_TRADE`** is off by default and extends the same treatment to *every* trade on any villager you interact with, vanilla and modded alike. That fixes the flaw outright, but it also means one farmer buying wheat becomes an uncapped emerald tap, so it does not switch itself on.
+**`NEVER_LOCK_TAUGHT_TRADES`** is on by default and keeps this mod's trades usable forever. **`NEVER_LOCK_ANY_TRADE`** is off by default and extends that to every trade on any villager you click, which fixes the flaw outright at the cost of uncapping emerald farming.
 
 ---
 
 ## Config
 
-**36 settings across four categories**, in `config/rlcraftvillagertomes.cfg` or **Mods → RLCraft Villager Tomes → Config**. All read live — nothing needs a restart, and price changes reach existing villagers the next time somebody talks to them.
+Six categories in `config/rlcraftvillagertomes.cfg`, or the in-game config screen. All read live; nothing needs a restart.
 
-- **learning** — who can be taught, the tome cap, enchantment whitelist and blacklist, treasure and curse switches, level ceilings, whether books can go past an enchantment's natural maximum.
-- **upgrading** — whether levelling works at all, whether higher books replace, whether a refused book is eaten anyway.
-- **pricing** — the whole formula, the extra input item, trade stock, experience, and the never-lock switches.
-- **feedback** — chat messages, villager sounds, particles, and a debug logging toggle.
+- **learning** — who can be taught, the tome cap, enchantment whitelist and blacklist, treasure and curse switches, level ceilings
+- **slots** — whether slots lock at all, how requests grow, the per-slot band weights, quest log size
+- **chance** — base, ceiling, per-slot growth, pity, the confirmation prompt, what a failure destroys
+- **bounties** — the item list villagers demand from, with per-band and per-item quantities
+- **catalysts** — which items raise the odds and by how much
+- **pricing** — the emerald formula, the extra input item, trade stock, experience
+- **upgrading** and **feedback** — levelling rules, messages, sounds, particles
 
-Screenshots of every category are on the Images tab.
+**152 bounty items** ship configured, spanning vanilla, Ice and Fire, Lycanites, Defiled Lands, Trinkets and Baubles and others. Items no loaded mod registers are skipped silently, so the list is safe on any 1.12.2 pack — it simply asks for less.
+
+Every setting is documented in the file itself, including what it is *for*, not just what it does.
 
 ---
 
 ## Commands
 
-`/villagertomes` — aliases `/tomes` and `/vt` — operates on the villager you are looking at.
+`/villagertomes` — aliases `/tomes`, `/vt` — works on the villager you are looking at.
 
-- `list` — what it knows and what each trade costs. Available to everyone.
-- `teach <enchantment> [level]` — add a tome directly. Op only.
-- `forget <enchantment>` — remove one. Op only.
-- `clear` — remove all of them. Op only.
-
-`teach` deliberately ignores the whitelist, blacklist and level ceiling. An admin command that refused to do what it was told would be useless for fixing a villager.
+| | |
+|---|---|
+| `list` | What it knows and what each trade costs. Everyone. |
+| `tiers` | The parsed item lists, and what the item in your hand counts as. Everyone. |
+| `unlock [n]` | Open slots without paying. Op. |
+| `bank <percent>` | Set banked chance outright. Op. |
+| `pity <ench> <percent>` | Set what a villager owes on one book. Op. |
+| `reroll` | Throw the current demand away and roll another. Op. |
+| `teach` / `forget` / `clear` | Edit its tomes directly. Op. |
 
 ---
 
 ## Things to know
 
-**Curing a zombie villager does not preserve tomes.** A zombie villager is a different entity class entirely, so the cured villager is a brand new one that has learned nothing. Protect your good villagers.
+**Curing a zombie villager does not preserve tomes.** A zombie villager is a different entity class, so the cured one is brand new with nothing learned. Protect your good librarians.
 
-**A villager will not learn what it already sells.** If a librarian naturally rolled an Unbreaking trade, offering it an Unbreaking book is refused and handed straight back — buy it from them instead. Slots are too expensive to let one be spent taking over a trade the villager could already do.
+**Librarians only, by default.** Books are a librarian's business, and the grind this removes is rerolling one for the enchantment you want — not finding one in the first place. `ALLOWED_PROFESSIONS` opens it up. Note that cartographers share the librarian profession and are included.
 
-**Multi-enchantment books are all-or-nothing.** Every enchantment on the book needs to be allowed and to have a free slot, or the whole book is refused. Watching a Mending + Unbreaking book vanish to teach only the Unbreaking would be a genuinely bad surprise, and there is no way to hand half a book back.
+**All of it can be switched off.** `ENABLE_CHANCE` restores guaranteed teaching and `LOCK_SLOTS` gives every villager its full allowance immediately — including ones already in your world. Between them you get the 1.x mod back.
 
 ---
 
@@ -158,11 +191,11 @@ Screenshots of every category are on the Images tab.
 - Minecraft 1.12.2, Forge 14.23.5.2847 or newer
 - No dependencies
 
-Everything happens server-side; the client half is a config screen and nothing else. Clients do not need the mod installed, and there are no custom packets.
+Everything happens server-side. Clients do not need the mod installed, and there are no custom packets.
 
 ## Install
 
-Download the jar and drop it in your `mods` folder.
+Download the jar and drop it in your `mods` folder. **Delete any older version first** — two copies will crash on startup with a duplicate mod id.
 
 ---
 
