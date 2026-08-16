@@ -1025,6 +1025,12 @@ public class ModConfig {
             "If true (default), villagers start with nothing and every slot must be bought\n"
                     + "with a delivered request.\n"
                     + "\n"
+                    + "A villager asks for its next slot from the moment it is below\n"
+                    + "MAX_TOMES_PER_VILLAGER, whether or not the slots it already has are empty.\n"
+                    + "So buying a librarian all the way out before handing it a single book is a\n"
+                    + "deliberate strategy, and the only route to the mod's best odds that does not\n"
+                    + "run through gambling books at its worst ones.\n"
+                    + "\n"
                     + "Set to false and every villager simply has MAX_TOMES_PER_VILLAGER slots open\n"
                     + "from the start, which is how the mod behaved before requests existed.\n"
                     + "Villagers that already unlocked slots keep them either way.";

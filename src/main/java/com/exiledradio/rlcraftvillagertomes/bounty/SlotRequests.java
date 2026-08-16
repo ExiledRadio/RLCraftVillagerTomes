@@ -25,6 +25,11 @@ import java.util.List;
  * wants, keeps that demand forever, and opens a slot only once the whole list is delivered.
  * Nothing here re-rolls: an unaffordable villager is a villager you walk away from, which
  * is what makes the ones you have invested in worth protecting.
+ *
+ * <p>A demand is live from the moment a villager is below its slot cap, regardless of
+ * whether the slots it already has are empty. Buying all five before handing over a single
+ * book is a deliberate strategy - it is the only route to the mod's best odds that does not
+ * run through gambling books at its worst ones.
  */
 public final class SlotRequests {
 
@@ -57,6 +62,21 @@ public final class SlotRequests {
     }
 
     /**
+     * Whether this villager still has a slot left to sell, and so a bounty to ask for.
+     *
+     * <p>Deliberately says nothing about whether the slots it already has are empty. A
+     * villager owes a bounty for its next slot from the moment it is short of the cap, so a
+     * player can buy all five before handing over a single book - which is the only way to
+     * reach the best odds the mod offers before risking anything on them. Gating this on a
+     * full slot instead meant the only route to a developed villager ran through feeding it
+     * books at its worst chances, which is exactly backwards.
+     */
+    public static boolean canUnlockMore(ITomeKnowledge tomes) {
+        return ModConfig.LOCK_SLOTS
+                && unlockedSlots(tomes) < ModConfig.MAX_TOMES_PER_VILLAGER;
+    }
+
+    /**
      * Why a book cannot be taught right now, or null when there is room.
      *
      * <p>Rolls the demand as a side effect when there is none, so the first player to offer
@@ -82,9 +102,16 @@ public final class SlotRequests {
         return "This villager has no room yet - it wants payment for its next slot.";
     }
 
-    /** Rolls a demand if this villager has not been asked before. */
+    /**
+     * Rolls a demand if this villager has not been asked before.
+     *
+     * <p>Guarded on {@link #canUnlockMore} here rather than at every call site, because the
+     * demand is now live at all times and so is reached from far more places than when it
+     * only existed between a filled slot and the next payment. A villager at the cap must
+     * never roll one - there is no slot six for it to be asking towards.
+     */
     public static void ensureRequest(EntityVillager villager, ITomeKnowledge tomes) {
-        if (!tomes.getRequest().isEmpty()) {
+        if (!canUnlockMore(tomes) || !tomes.getRequest().isEmpty()) {
             return;
         }
         // Seeded from the world's random rather than anything stable, so two villagers in
@@ -142,8 +169,21 @@ public final class SlotRequests {
             player.sendMessage(new TextComponentString(PREFIX + TextFormatting.GREEN
                     + "Slot unlocked. " + TextFormatting.GRAY + "This villager now has "
                     + unlockedSlots(tomes) + " slot(s), " + openSlots(tomes) + " free."));
-            // The demand this entry was tracking no longer exists, so the page goes with it.
-            QuestBinding.clearIfLogged(player, villager);
+
+            if (canUnlockMore(tomes)) {
+                // Straight on to the next demand rather than making the player click again
+                // to discover there is one. Buying a villager out from one slot to five is
+                // now a single continuous errand, so the list for the next leg belongs in
+                // the same breath as the confirmation for the last.
+                describeRequest(player, villager, tomes);
+                // And the log follows it to the new demand instead of being crossed off,
+                // which it only deserves once there is genuinely nothing left to fetch.
+                QuestBinding.refreshIfLogged(player, villager, tomes);
+            } else {
+                player.sendMessage(new TextComponentString(PREFIX + TextFormatting.GRAY
+                        + "That was its last slot - it will not ask for anything again."));
+                QuestBinding.clearIfLogged(player, villager);
+            }
             return;
         }
 
@@ -169,8 +209,7 @@ public final class SlotRequests {
     /** Prints what this villager is asking for, rolling a demand first if it has none. */
     public static void describeRequest(EntityPlayer player, EntityVillager villager,
                                        ITomeKnowledge tomes) {
-        if (!ModConfig.LOCK_SLOTS || openSlots(tomes) > 0
-                || unlockedSlots(tomes) >= ModConfig.MAX_TOMES_PER_VILLAGER) {
+        if (!canUnlockMore(tomes)) {
             return;
         }
         ensureRequest(villager, tomes);

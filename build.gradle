@@ -102,6 +102,20 @@ task deployToInstance(type: Copy) {
 	from jar.archivePath
 	into deployDir ?: "$buildDir/deploy"
 	rename { "RLCraftVillagerTomes-${project.version}.jar" }
+
+	// The jar name carries the version, so a version bump deploys alongside the old one
+	// rather than over it - and two jars declaring the same modid is a hard crash on
+	// startup, blamed on the pack rather than on this. Every earlier build of this mod goes
+	// before the new one lands.
+	doFirst {
+		def target = file(deployDir ?: "$buildDir/deploy")
+		target.listFiles({ dir, name ->
+			name ==~ /^RLCraftVillagerTomes-.*\.jar$/
+		} as FilenameFilter)?.each {
+			logger.lifecycle("deployToInstance: removing stale ${it.name}")
+			it.delete()
+		}
+	}
 }
 
 deployToInstance.dependsOn reobfJar

@@ -90,6 +90,14 @@ public final class TomeLearningHandler {
         // book is an attempt, a catalyst is a deposit, and an empty hand is a question.
         // Anything else is none of our business and falls through to the trade screen.
         boolean sneakAction = ModConfig.ENABLE_LEARNING && isTeachingClick(player);
+        // Rolled here rather than lazily further down, because a villager now owes a bounty
+        // from the moment it is short of the cap - so the demand has to exist before `wants`
+        // is asked, or the first person to walk up holding the right item would be told the
+        // villager is not interested. Kept behind the sneak gate so an ordinary trade click
+        // never writes a demand onto every villager in the world.
+        if (sneakAction) {
+            SlotRequests.ensureRequest(villager, tomes);
+        }
         boolean teaching = sneakAction && !held.isEmpty()
                 && held.getItem() == Items.ENCHANTED_BOOK;
         boolean delivering = sneakAction && ModConfig.LOCK_SLOTS && !held.isEmpty()
@@ -365,8 +373,9 @@ public final class TomeLearningHandler {
                     + slots));
         }
 
-        // No-op when the villager has room, so an inspect only mentions a demand when there
-        // actually is one to satisfy.
+        // Silent only once the villager is at its slot cap. Everywhere below that it owes a
+        // bounty whether or not its existing slots are empty, and this is the click people
+        // use to check what it is.
         SlotRequests.describeRequest(player, villager, tomes);
     }
 

@@ -311,10 +311,11 @@ public class CommandVillagerTomes extends CommandBase {
                 : ModConfig.MAX_TOMES_PER_VILLAGER;
 
         tomes.setUnlockedSlots(target);
-        // A demand for a slot that is already open would sit there unsatisfiable.
-        if (SlotRequests.openSlots(tomes) > 0) {
-            tomes.setRequest(null);
-        }
+        // Whatever it was owed was rolled for a slot number that has just moved, so it is
+        // dropped and re-rolled at the new depth on the next click. Unconditional: a demand
+        // is now live at every depth below the cap, so "it has a free slot" is no longer a
+        // reason for one not to exist.
+        tomes.setRequest(null);
         reply(sender, TextFormatting.GREEN + "Unlocked " + target + " slot(s). "
                 + TextFormatting.GRAY + SlotRequests.openSlots(tomes) + " free, chance now "
                 + trim(ModConfig.getTotalChance(SlotRequests.unlockedSlots(tomes), 0.0F,
@@ -385,8 +386,9 @@ public class CommandVillagerTomes extends CommandBase {
         EntityVillager villager = requireTargetedVillager(sender);
         ITomeKnowledge tomes = requireTomes(villager);
 
-        if (SlotRequests.openSlots(tomes) > 0) {
-            throw new CommandException("This villager has a free slot, so it wants nothing yet.");
+        if (!SlotRequests.canUnlockMore(tomes)) {
+            throw new CommandException(
+                    "This villager is at its slot cap, so it wants nothing and never will.");
         }
         tomes.setRequest(null);
         SlotRequests.ensureRequest(villager, tomes);

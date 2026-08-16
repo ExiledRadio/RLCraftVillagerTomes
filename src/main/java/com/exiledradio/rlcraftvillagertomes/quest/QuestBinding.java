@@ -59,14 +59,12 @@ public final class QuestBinding {
      */
     public static void offer(EntityPlayer player, EntityVillager villager, ItemStack log,
                              ITomeKnowledge tomes) {
-        if (SlotRequests.openSlots(tomes) > 0) {
+        // Only the slot cap silences this now. A villager with an empty slot still owes a
+        // bounty for its next one, and that errand is exactly the kind worth writing down -
+        // buying a librarian out to five slots before risking a book on it is a long walk.
+        if (!SlotRequests.canUnlockMore(tomes)) {
             player.sendMessage(new TextComponentString(prefix() + TextFormatting.GRAY
-                    + "This villager already has room - nothing to write down."));
-            return;
-        }
-        if (SlotRequests.unlockedSlots(tomes) >= ModConfig.MAX_TOMES_PER_VILLAGER) {
-            player.sendMessage(new TextComponentString(prefix() + TextFormatting.GRAY
-                    + "This villager is full - nothing left to save for."));
+                    + "This villager has every slot it can have - nothing left to save for."));
             return;
         }
 

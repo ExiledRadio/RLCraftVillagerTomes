@@ -33,7 +33,7 @@ Works out of the box. No dependencies, and clients do not need it installed.
 
 | | |
 |---|---|
-| **Pay for a slot** | Every librarian wants a list of items before it will hold a book. Deliver it. |
+| **Pay for its slots** | Every librarian wants a list of items before it will hold a book. Deliver it — then buy the next slot, and the next, for as long as you want its odds higher. |
 | **Stack the odds** | Feed it glowing powder, ingots or gems. Each one raises its chance. |
 | **Check where you stand** | Sneak-click it empty-handed for the current odds and what it still wants. |
 | **Commit the book** | Sneak-click with the book. It asks once, then rolls. |
@@ -58,6 +58,8 @@ Requests get longer and richer the deeper you go — two items for the first slo
 
 **A request is never re-rolled.** If a villager wants something you cannot get, the answer is a different villager. That is what makes the ones you have already paid into worth protecting.
 
+**Every slot is for sale up front.** A librarian asks for its next bounty whether or not the slots it already has are empty, so you can buy all five before handing it a single book. That is the strategy the odds are built around — see below.
+
 Five slots per librarian by default, and every one of them costs.
 
 ---
@@ -77,6 +79,8 @@ A librarian on its first slot accepts a book **30%** of the time. Every slot it 
 Those numbers come straight from what each costs to craft — an ingot is four powder, a gem is four ingots plus four powder plus a diamond block. A single gem takes a fresh villager from its base to its ceiling.
 
 The ceiling is **80%** on a one-slot librarian and rises **+5 per slot unlocked**, reaching **100% on a fully opened one**. So preparation never quite guarantees the result on a young villager, and does on a villager you have paid into five times — which is the reward for committing to one rather than spreading books across a dozen.
+
+Since slots are all for sale from the start, the safe play is to buy a librarian out to five before you ever risk a book on it. Five slots is 70% base; one glowing gem on top of that is the only certainty in the mod. Getting there costs four bounties and no books at all.
 
 Every attempt asks before it commits, and reports the odds while it asks.
 
