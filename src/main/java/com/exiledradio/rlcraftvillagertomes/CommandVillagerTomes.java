@@ -3,6 +3,7 @@ package com.exiledradio.rlcraftvillagertomes;
 import com.exiledradio.rlcraftvillagertomes.capability.CapabilityTomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.bounty.BountyEntry;
+import com.exiledradio.rlcraftvillagertomes.bounty.SlotRequests;
 import com.exiledradio.rlcraftvillagertomes.bounty.BountyRegistry;
 import com.exiledradio.rlcraftvillagertomes.bounty.BountyTier;
 import com.exiledradio.rlcraftvillagertomes.capability.Tome;
@@ -63,7 +64,7 @@ public class CommandVillagerTomes extends CommandBase {
 
     @Override
     public String getUsage(ICommandSender sender) {
-        return "/villagertomes <list|tiers|name|teach|forget|clear> [args]";
+        return "/villagertomes <list|tiers|name|unlock|bank|pity|reroll|teach|forget|clear> [args]";
     }
 
     /** Zero so that unprivileged players can reach {@code list}. See {@link #checkAdmin}. */
@@ -95,6 +96,14 @@ public class CommandVillagerTomes extends CommandBase {
             executeCancel(sender);
         } else if ("unlog".equals(subCommand)) {
             executeUnlog(sender, args);
+        } else if ("unlock".equals(subCommand)) {
+            executeUnlock(server, sender, args);
+        } else if ("bank".equals(subCommand)) {
+            executeBank(server, sender, args);
+        } else if ("pity".equals(subCommand)) {
+            executePity(server, sender, args);
+        } else if ("reroll".equals(subCommand)) {
+            executeReroll(server, sender);
         } else if ("teach".equals(subCommand)) {
             executeTeach(server, sender, args);
         } else if ("forget".equals(subCommand)) {
@@ -264,6 +273,113 @@ public class CommandVillagerTomes extends CommandBase {
         reply(sender, TextFormatting.GRAY + QuestBinding.cancel((EntityPlayer) sender));
     }
 
+    /**
+     * Opens slots without paying for them.
+     *
+     * <p>Exists because every slot normally costs a delivered bounty, which makes testing
+     * anything downstream of a slot - the odds, the pity, an upgrade - a twenty minute
+     * errand. With no count it opens everything up to the cap.
+     */
+    private void executeUnlock(MinecraftServer server, ICommandSender sender, String[] args)
+            throws CommandException {
+        checkAdmin(server, sender);
+        EntityVillager villager = requireTargetedVillager(sender);
+        ITomeKnowledge tomes = requireTomes(villager);
+
+        int target = args.length >= 2
+                ? parseInt(args[1], 0, ModConfig.MAX_TOMES_PER_VILLAGER)
+                : ModConfig.MAX_TOMES_PER_VILLAGER;
+
+        tomes.setUnlockedSlots(target);
+        // A demand for a slot that is already open would sit there unsatisfiable.
+        if (SlotRequests.openSlots(tomes) > 0) {
+            tomes.setRequest(null);
+        }
+        reply(sender, TextFormatting.GREEN + "Unlocked " + target + " slot(s). "
+                + TextFormatting.GRAY + SlotRequests.openSlots(tomes) + " free, chance now "
+                + trim(ModConfig.getTotalChance(SlotRequests.chanceSlots(tomes), 0.0F,
+                        tomes.getBankedChance())) + "%.");
+    }
+
+    /** Sets the banked catalyst percentage outright, instead of feeding items one at a time. */
+    private void executeBank(MinecraftServer server, ICommandSender sender, String[] args)
+            throws CommandException {
+        checkAdmin(server, sender);
+        if (args.length < 2) {
+            throw new WrongUsageException("/villagertomes bank <percent>");
+        }
+        EntityVillager villager = requireTargetedVillager(sender);
+        ITomeKnowledge tomes = requireTomes(villager);
+
+        float percent;
+        try {
+            percent = Float.parseFloat(args[1]);
+        } catch (NumberFormatException e) {
+            throw new CommandException("%s is not a number.", args[1]);
+        }
+
+        tomes.clearBankedChance();
+        tomes.addBankedChance(Math.max(0.0F, percent));
+        reply(sender, TextFormatting.GREEN + "Banked set to " + trim(tomes.getBankedChance())
+                + "%. " + TextFormatting.GRAY + "Chance now "
+                + trim(ModConfig.getTotalChance(SlotRequests.chanceSlots(tomes), 0.0F,
+                        tomes.getBankedChance())) + "%.");
+    }
+
+    /** Sets what this villager owes on one enchantment, so the pity ramp can be jumped to. */
+    private void executePity(MinecraftServer server, ICommandSender sender, String[] args)
+            throws CommandException {
+        checkAdmin(server, sender);
+        if (args.length < 3) {
+            throw new WrongUsageException("/villagertomes pity <enchantment> <percent>");
+        }
+        EntityVillager villager = requireTargetedVillager(sender);
+        ITomeKnowledge tomes = requireTomes(villager);
+
+        ResourceLocation id = parseEnchantment(args[1]).getRegistryName();
+        float percent;
+        try {
+            percent = Float.parseFloat(args[2]);
+        } catch (NumberFormatException e) {
+            throw new CommandException("%s is not a number.", args[2]);
+        }
+
+        tomes.clearPity(id);
+        tomes.addPityBonus(id, Math.max(0.0F, percent));
+        reply(sender, TextFormatting.GREEN + String.valueOf(id) + " pity set to "
+                + trim(tomes.getPityBonus(id)) + "%. " + TextFormatting.GRAY + "That book is now "
+                + trim(ModConfig.getTotalChance(SlotRequests.chanceSlots(tomes),
+                        tomes.getPityBonus(id), tomes.getBankedChance())) + "%.");
+    }
+
+    /**
+     * Throws away the outstanding demand and rolls a fresh one.
+     *
+     * <p>The only way to see what the band weights actually produce without finding a new
+     * villager each time. Deliberately an op command: a request never re-rolls in play, and
+     * that is the whole reason an unaffordable villager is one you walk away from.
+     */
+    private void executeReroll(MinecraftServer server, ICommandSender sender)
+            throws CommandException {
+        checkAdmin(server, sender);
+        EntityVillager villager = requireTargetedVillager(sender);
+        ITomeKnowledge tomes = requireTomes(villager);
+
+        if (SlotRequests.openSlots(tomes) > 0) {
+            throw new CommandException("This villager has a free slot, so it wants nothing yet.");
+        }
+        tomes.setRequest(null);
+        SlotRequests.ensureRequest(villager, tomes);
+        if (sender instanceof EntityPlayer) {
+            SlotRequests.describeRequest((EntityPlayer) sender, villager, tomes);
+        }
+    }
+
+    /** Drops a trailing .0 so whole percentages read as "55%" rather than "55.0%". */
+    private static String trim(float value) {
+        return value == Math.rint(value) ? String.valueOf((int) value) : String.valueOf(value);
+    }
+
     private void executeTeach(MinecraftServer server, ICommandSender sender, String[] args)
             throws CommandException {
         checkAdmin(server, sender);
@@ -408,10 +524,11 @@ public class CommandVillagerTomes extends CommandBase {
     public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
                                           String[] args, net.minecraft.util.math.BlockPos pos) {
         if (args.length == 1) {
-            return getListOfStringsMatchingLastWord(args, "list", "tiers", "name", "cancel", "teach",
-                    "forget", "clear");
+            return getListOfStringsMatchingLastWord(args, "list", "tiers", "name", "cancel", "unlock",
+                    "bank", "pity", "reroll", "teach", "forget", "clear");
         }
-        if (args.length == 2 && ("teach".equals(args[0]) || "forget".equals(args[0]))) {
+        if (args.length == 2 && ("teach".equals(args[0]) || "forget".equals(args[0])
+                || "pity".equals(args[0]))) {
             List<String> names = new ArrayList<String>();
             for (Enchantment enchantment : ForgeRegistries.ENCHANTMENTS) {
                 if (enchantment.getRegistryName() != null) {
