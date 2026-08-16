@@ -228,6 +228,31 @@ public final class TomeLearningHandler {
         // all-or-nothing everywhere else, and rolling each line separately would let half a
         // book land, which there is no way to represent.
         ResourceLocation gambledOn = plan.primaryEnchantment();
+
+        // Last gate before anything is spent. Everything above this point is a check that
+        // can refuse; from here the book is genuinely at risk, so the player gets told the
+        // odds and has to say yes.
+        TeachConfirmations.Verdict verdict = TeachConfirmations.check(
+                player, villager.getUniqueID(), gambledOn, top.getValue().intValue());
+        if (verdict == TeachConfirmations.Verdict.TOO_SOON) {
+            // Deliberately silent. This is the second half of a double-click, and answering
+            // it either way - or even saying anything - would defeat the point.
+            return;
+        }
+        if (verdict == TeachConfirmations.Verdict.ASK) {
+            float odds = ModConfig.getTotalChance(SlotRequests.chanceSlots(tomes),
+                    tomes.getPityBonus(gambledOn), tomes.getBankedChance());
+            ITextComponent ask = new TextComponentString(PREFIX + TextFormatting.YELLOW
+                    + "Give ");
+            ask.appendSibling(describe(top.getKey(), top.getValue().intValue()));
+            ask.appendSibling(new TextComponentString(TextFormatting.YELLOW + " to this villager? "
+                    + TextFormatting.WHITE + percent(odds) + TextFormatting.YELLOW + " chance."));
+            player.sendMessage(ask);
+            player.sendMessage(new TextComponentString(TextFormatting.GRAY
+                    + "  Sneak-click again to confirm. The book is destroyed if it fails."));
+            return;
+        }
+
         if (ModConfig.ENABLE_CHANCE && !player.capabilities.isCreativeMode) {
             float chance = ModConfig.getTotalChance(
                     SlotRequests.chanceSlots(tomes), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
@@ -691,6 +716,9 @@ public final class TomeLearningHandler {
 
     private static void refuse(EntityPlayer player, EntityVillager villager, ItemStack held,
                                String reason) {
+        // A refusal must not leave a confirmation armed, or the click that fixes whatever
+        // was wrong would commit a book the player never said yes to.
+        TeachConfirmations.clear(player);
         if (ModConfig.CONSUME_BOOK_ON_REJECT && !player.capabilities.isCreativeMode) {
             held.shrink(1);
         }

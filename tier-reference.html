@@ -1,0 +1,286 @@
+<title>Villager Tomes - tier reference</title>
+<style>
+:root{
+  --ground:#F4F6F2; --panel:#FFFFFF; --panel-2:#FAFBF8;
+  --ink:#161A17; --ink-soft:#59615A; --ink-faint:#8B948C;
+  --rule:#DBE0D8; --accent:#0F6E49;
+  --low:#67736C; --mid:#15805A; --high:#A5622A; --miss:#B23B3B;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1210; --panel:#171B18; --panel-2:#1C211D;
+    --ink:#E7EBE5; --ink-soft:#9AA39B; --ink-faint:#727B74;
+    --rule:#282E29; --accent:#4FC08D;
+    --low:#8B968F; --mid:#4FC08D; --high:#D79A5C; --miss:#E0736F;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1210; --panel:#171B18; --panel-2:#1C211D;
+  --ink:#E7EBE5; --ink-soft:#9AA39B; --ink-faint:#727B74;
+  --rule:#282E29; --accent:#4FC08D;
+  --low:#8B968F; --mid:#4FC08D; --high:#D79A5C; --miss:#E0736F;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased}
+code{font-family:ui-monospace,"SF Mono","Cascadia Mono","JetBrains Mono",Menlo,Consolas,monospace}
+.wrap{max-width:1120px;margin:0 auto;padding:40px 24px 80px}
+header.top{border-bottom:2px solid var(--ink);padding-bottom:18px}
+.eyebrow{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:11px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h1{font-family:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+  font-size:clamp(26px,4vw,38px);font-weight:600;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sub{color:var(--ink-soft);margin:10px 0 0;max-width:62ch}
+.facts{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 0}
+.fact{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:9px 13px;
+  display:flex;gap:9px;align-items:baseline}
+.fact b{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;
+  font-variant-numeric:tabular-nums}
+.fact span{color:var(--ink-soft);font-size:12.5px}
+.toolbar{display:flex;gap:12px;align-items:center;margin:0 0 20px;flex-wrap:wrap}
+#q{flex:1;min-width:220px;padding:10px 12px;border:1px solid var(--rule);border-radius:3px;
+  background:var(--panel);color:var(--ink);
+  font:14px/1.4 ui-monospace,Menlo,Consolas,monospace}
+#q:focus{outline:2px solid var(--accent);outline-offset:1px}
+.count{color:var(--ink-faint);font-size:12.5px;font-variant-numeric:tabular-nums}
+h2{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-soft);margin:44px 0 16px;padding-bottom:8px;
+  border-bottom:1px solid var(--rule)}
+.band{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--band);
+  border-radius:3px;padding:18px 20px;margin-bottom:14px}
+.t-low{--band:var(--low)} .t-mid{--band:var(--mid)} .t-high{--band:var(--high)}
+.bandhead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+  flex-wrap:wrap;margin-bottom:14px}
+.bandhead h3{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:17px;margin:0;
+  color:var(--band);letter-spacing:.02em}
+.bandmeta{margin:0;color:var(--ink-soft);font-size:12.5px;font-variant-numeric:tabular-nums}
+.range{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
+.dot{opacity:.45;margin:0 4px}
+.ns{margin-top:14px}
+.ns h4{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-faint);margin:0 0 8px;display:flex;gap:7px;
+  align-items:center}
+.nscount{opacity:.7}
+.chips{list-style:none;margin:0;padding:0;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:6px}
+.chip{background:var(--panel-2);border:1px solid var(--rule);border-radius:2px;padding:7px 10px;
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.chip code{font-size:12.5px;word-break:break-all}
+.qty{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--band);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.ov{color:var(--accent);font-weight:700}
+.miss{color:var(--miss);font-size:11px;white-space:nowrap}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--rule);border-radius:3px}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--rule);vertical-align:middle}
+tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+thead th{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-faint);font-weight:500}
+.num{font-family:ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;
+  text-align:right;width:74px}
+.barcell{width:190px}
+.bar{display:block;height:7px;border-radius:1px;background:var(--accent);min-width:3px}
+.members code{font-size:12px;color:var(--ink-soft)}
+.none{color:var(--ink-faint)}
+.note{color:var(--ink-soft);font-size:13px;max-width:70ch;margin:14px 0 0}
+.hidden{display:none !important}
+footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--rule);
+  color:var(--ink-faint);font-size:12.5px}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+</style>
+<div class="wrap">
+<header class="top">
+  <p class="eyebrow">RLCraft Villager Tomes &middot; 2.0.0</p>
+  <h1>Tier reference</h1>
+  <p class="sub">Every item a villager can demand for a slot, and every item that improves a
+  teaching attempt. Generated from the shipped config defaults.</p>
+  <div class="facts">
+    <div class="fact"><b>30%</b><span>base, first slot</span></div>
+    <div class="fact"><b>+10</b><span>per slot unlocked</span></div>
+    <div class="fact"><b>80%</b><span>ceiling, +5 per slot</span></div>
+    <div class="fact"><b>+5</b><span>pity per book level, stacks above the ceiling</span></div>
+    <div class="fact"><b>132</b><span>bounty items</span></div>
+  </div>
+</header>
+
+<h2>Bounties &mdash; what a villager demands</h2>
+<div class="toolbar">
+  <input id="q" type="search" placeholder="Filter by name or mod, e.g. iceandfire or dragon"
+         aria-label="Filter items">
+  <span class="count" id="count"></span>
+</div>
+<section class="band t-low"><header class="bandhead"><h3>low</h3><p class="bandmeta"><span class="range">8&ndash;24</span> per request <span class="dot">&middot;</span> 48 items</p></header><div class="ns"><h4>minecraft <span class="nscount">32</span></h4><ul class="chips"><li class="chip" data-search="minecraft:glass glass"><code>minecraft:glass</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:spider_eye spider eye"><code>minecraft:spider_eye</code><span class="qty">4-10 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:potato potato"><code>minecraft:potato</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:carrot carrot"><code>minecraft:carrot</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:quartz quartz"><code>minecraft:quartz</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:netherbrick netherbrick"><code>minecraft:netherbrick</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:flint flint"><code>minecraft:flint</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:rotten_flesh rotten flesh"><code>minecraft:rotten_flesh</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:string string"><code>minecraft:string</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:bone bone"><code>minecraft:bone</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:gunpowder gunpowder"><code>minecraft:gunpowder</code><span class="qty">4-12 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:reeds reeds"><code>minecraft:reeds</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:sugar sugar"><code>minecraft:sugar</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:cookie cookie"><code>minecraft:cookie</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:melon melon"><code>minecraft:melon</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:bread bread"><code>minecraft:bread</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:apple apple"><code>minecraft:apple</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:fish fish"><code>minecraft:fish</code><span class="qty">4-10 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:cooked_rabbit cooked rabbit"><code>minecraft:cooked_rabbit</code><span class="qty">3-8 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:cooked_mutton cooked mutton"><code>minecraft:cooked_mutton</code><span class="qty">3-8 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:cooked_porkchop cooked porkchop"><code>minecraft:cooked_porkchop</code><span class="qty">3-8 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:cooked_chicken cooked chicken"><code>minecraft:cooked_chicken</code><span class="qty">3-8 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:cooked_beef cooked beef"><code>minecraft:cooked_beef</code><span class="qty">3-8 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:pumpkin_pie pumpkin pie"><code>minecraft:pumpkin_pie</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:coal:0 coal"><code>minecraft:coal:0</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:redstone redstone"><code>minecraft:redstone</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:glowstone_dust glowstone dust"><code>minecraft:glowstone_dust</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:blaze_powder blaze powder"><code>minecraft:blaze_powder</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:iron_ingot iron ingot"><code>minecraft:iron_ingot</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:gold_ingot gold ingot"><code>minecraft:gold_ingot</code><span class="qty">8-24</span></li>
+<li class="chip" data-search="minecraft:emerald emerald"><code>minecraft:emerald</code><span class="qty">6-18 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:diamond diamond"><code>minecraft:diamond</code><span class="qty">4-12 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>defiledlands <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="defiledlands:book_wyrm_cooked book wyrm cooked"><code>defiledlands:book_wyrm_cooked</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>familiarfauna <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="familiarfauna:pixie_dust pixie dust"><code>familiarfauna:pixie_dust</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>foodexpansion <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="foodexpansion:itemcookedsquid itemcookedsquid"><code>foodexpansion:itemcookedsquid</code><span class="qty">3-8 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>iceandfire <span class="nscount">2</span></h4><ul class="chips"><li class="chip" data-search="iceandfire:pixie_dust pixie dust"><code>iceandfire:pixie_dust</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:copper_ingot copper ingot"><code>iceandfire:copper_ingot</code><span class="qty">8-24</span></li></ul></div>
+<div class="ns"><h4>lycanitesmobs <span class="nscount">7</span></h4><ul class="chips"><li class="chip" data-search="lycanitesmobs:cooked_silex_meat cooked silex meat"><code>lycanitesmobs:cooked_silex_meat</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="lycanitesmobs:cooked_maka_meat cooked maka meat"><code>lycanitesmobs:cooked_maka_meat</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="lycanitesmobs:cooked_arisaur_meat cooked arisaur meat"><code>lycanitesmobs:cooked_arisaur_meat</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="lycanitesmobs:cooked_bobeko_meat cooked bobeko meat"><code>lycanitesmobs:cooked_bobeko_meat</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="lycanitesmobs:cooked_krake_meat cooked krake meat"><code>lycanitesmobs:cooked_krake_meat</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="lycanitesmobs:cooked_aspid_meat cooked aspid meat"><code>lycanitesmobs:cooked_aspid_meat</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="lycanitesmobs:cooked_joust_meat cooked joust meat"><code>lycanitesmobs:cooked_joust_meat</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>rustic <span class="nscount">2</span></h4><ul class="chips"><li class="chip" data-search="rustic:wildberries wildberries"><code>rustic:wildberries</code><span class="qty">4-12 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="rustic:grapes grapes"><code>rustic:grapes</code><span class="qty">4-12 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>simpledifficulty <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="simpledifficulty:frost_powder frost powder"><code>simpledifficulty:frost_powder</code><span class="qty">4-10 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>xat <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="xat:glowing_powder glowing powder"><code>xat:glowing_powder</code><span class="qty">2-4 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div></section>
+<section class="band t-mid"><header class="bandhead"><h3>mid</h3><p class="bandmeta"><span class="range">2&ndash;8</span> per request <span class="dot">&middot;</span> 54 items</p></header><div class="ns"><h4>minecraft <span class="nscount">28</span></h4><ul class="chips"><li class="chip" data-search="minecraft:stone_pickaxe stone pickaxe"><code>minecraft:stone_pickaxe</code><span class="qty">2-8</span></li>
+<li class="chip" data-search="minecraft:stone_axe stone axe"><code>minecraft:stone_axe</code><span class="qty">2-8</span></li>
+<li class="chip" data-search="minecraft:stone_shovel stone shovel"><code>minecraft:stone_shovel</code><span class="qty">2-8</span></li>
+<li class="chip" data-search="minecraft:stone_sword stone sword"><code>minecraft:stone_sword</code><span class="qty">2-8</span></li>
+<li class="chip" data-search="minecraft:iron_pickaxe iron pickaxe"><code>minecraft:iron_pickaxe</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:iron_axe iron axe"><code>minecraft:iron_axe</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:iron_shovel iron shovel"><code>minecraft:iron_shovel</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:iron_sword iron sword"><code>minecraft:iron_sword</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:golden_pickaxe golden pickaxe"><code>minecraft:golden_pickaxe</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:golden_axe golden axe"><code>minecraft:golden_axe</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:golden_shovel golden shovel"><code>minecraft:golden_shovel</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:golden_sword golden sword"><code>minecraft:golden_sword</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:flint_and_steel flint and steel"><code>minecraft:flint_and_steel</code><span class="qty">1-2 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:saddle saddle"><code>minecraft:saddle</code><span class="qty">1-2 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:tnt tnt"><code>minecraft:tnt</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:compass compass"><code>minecraft:compass</code><span class="qty">1-2 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:clock clock"><code>minecraft:clock</code><span class="qty">1-2 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:ender_pearl ender pearl"><code>minecraft:ender_pearl</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:skull:0 skull"><code>minecraft:skull:0</code><span class="qty">1-2 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:skull:2 skull"><code>minecraft:skull:2</code><span class="qty">1-2 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:blaze_rod blaze rod"><code>minecraft:blaze_rod</code><span class="qty">2-8</span></li>
+<li class="chip" data-search="minecraft:coal_block coal block"><code>minecraft:coal_block</code><span class="qty">2-8</span></li>
+<li class="chip" data-search="minecraft:redstone_block redstone block"><code>minecraft:redstone_block</code><span class="qty">2-8</span></li>
+<li class="chip" data-search="minecraft:glowstone glowstone"><code>minecraft:glowstone</code><span class="qty">2-8</span></li>
+<li class="chip" data-search="minecraft:iron_block iron block"><code>minecraft:iron_block</code><span class="qty">2-8</span></li>
+<li class="chip" data-search="minecraft:gold_block gold block"><code>minecraft:gold_block</code><span class="qty">2-8</span></li>
+<li class="chip" data-search="minecraft:diamond_block diamond block"><code>minecraft:diamond_block</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="minecraft:emerald_block emerald block"><code>minecraft:emerald_block</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>armorunder <span class="nscount">2</span></h4><ul class="chips"><li class="chip" data-search="armorunder:heating_goo heating goo"><code>armorunder:heating_goo</code><span class="qty">1-4 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="armorunder:cooling_goo cooling goo"><code>armorunder:cooling_goo</code><span class="qty">1-4 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>defiledlands <span class="nscount">3</span></h4><ul class="chips"><li class="chip" data-search="defiledlands:foul_slime foul slime"><code>defiledlands:foul_slime</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="defiledlands:foul_candy foul candy"><code>defiledlands:foul_candy</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="defiledlands:book_wyrm_scale book wyrm scale"><code>defiledlands:book_wyrm_scale</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>firstaid <span class="nscount">2</span></h4><ul class="chips"><li class="chip" data-search="firstaid:bandage bandage"><code>firstaid:bandage</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="firstaid:plaster plaster"><code>firstaid:plaster</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>foodexpansion <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="foodexpansion:itemchocolatebar itemchocolatebar"><code>foodexpansion:itemchocolatebar</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>iceandfire <span class="nscount">9</span></h4><ul class="chips"><li class="chip" data-search="iceandfire:sapphire_gem sapphire gem"><code>iceandfire:sapphire_gem</code><span class="qty">2-8</span></li>
+<li class="chip" data-search="iceandfire:troll_tusk troll tusk"><code>iceandfire:troll_tusk</code><span class="qty">1-4 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:troll_leather_forest troll leather forest"><code>iceandfire:troll_leather_forest</code><span class="qty">1-4 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:troll_leather_frost troll leather frost"><code>iceandfire:troll_leather_frost</code><span class="qty">1-4 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:troll_leather_mountain troll leather mountain"><code>iceandfire:troll_leather_mountain</code><span class="qty">1-4 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:stymphalian_bird_feather stymphalian bird feather"><code>iceandfire:stymphalian_bird_feather</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:amphithere_feather amphithere feather"><code>iceandfire:amphithere_feather</code><span class="qty">1-4 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:sea_serpent_fang sea serpent fang"><code>iceandfire:sea_serpent_fang</code><span class="qty">1-4 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:dragonbone dragonbone"><code>iceandfire:dragonbone</code><span class="qty">2-8</span></li></ul></div>
+<div class="ns"><h4>inspirations <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="inspirations:barometer barometer"><code>inspirations:barometer</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>roughtweaks <span class="nscount">2</span></h4><ul class="chips"><li class="chip" data-search="roughtweaks:bandage bandage"><code>roughtweaks:bandage</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="roughtweaks:plaster plaster"><code>roughtweaks:plaster</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>scalinghealth <span class="nscount">2</span></h4><ul class="chips"><li class="chip" data-search="scalinghealth:heartdust heartdust"><code>scalinghealth:heartdust</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="scalinghealth:crystalshard crystalshard"><code>scalinghealth:crystalshard</code><span class="qty">2-8</span></li></ul></div>
+<div class="ns"><h4>sereneseasons <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="sereneseasons:greenhouse_glass greenhouse glass"><code>sereneseasons:greenhouse_glass</code><span class="qty">2-6 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>simpledifficulty <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="simpledifficulty:frost_rod frost rod"><code>simpledifficulty:frost_rod</code><span class="qty">2-8</span></li></ul></div>
+<div class="ns"><h4>toolbelt <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="toolbelt:belt belt"><code>toolbelt:belt</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>xat <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="xat:glowing_ingot glowing ingot"><code>xat:glowing_ingot</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div></section>
+<section class="band t-high"><header class="bandhead"><h3>high</h3><p class="bandmeta"><span class="range">1&ndash;2</span> per request <span class="dot">&middot;</span> 30 items</p></header><div class="ns"><h4>minecraft <span class="nscount">5</span></h4><ul class="chips"><li class="chip" data-search="minecraft:diamond_pickaxe diamond pickaxe"><code>minecraft:diamond_pickaxe</code><span class="qty">1-2</span></li>
+<li class="chip" data-search="minecraft:diamond_axe diamond axe"><code>minecraft:diamond_axe</code><span class="qty">1-2</span></li>
+<li class="chip" data-search="minecraft:diamond_shovel diamond shovel"><code>minecraft:diamond_shovel</code><span class="qty">1-2</span></li>
+<li class="chip" data-search="minecraft:diamond_sword diamond sword"><code>minecraft:diamond_sword</code><span class="qty">1-2</span></li>
+<li class="chip" data-search="minecraft:ghast_tear ghast tear"><code>minecraft:ghast_tear</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>bountifulbaubles <span class="nscount">5</span></h4><ul class="chips"><li class="chip" data-search="bountifulbaubles:trinketballoon trinketballoon"><code>bountifulbaubles:trinketballoon</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="bountifulbaubles:trinketmagiclenses trinketmagiclenses"><code>bountifulbaubles:trinketmagiclenses</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="bountifulbaubles:crowngold crowngold"><code>bountifulbaubles:crowngold</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="bountifulbaubles:amuletsinempty amuletsinempty"><code>bountifulbaubles:amuletsinempty</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="bountifulbaubles:amuletcross amuletcross"><code>bountifulbaubles:amuletcross</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>charm <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="charm:charged_emerald charged emerald"><code>charm:charged_emerald</code><span class="qty">1-2</span></li></ul></div>
+<div class="ns"><h4>defiledlands <span class="nscount">2</span></h4><ul class="chips"><li class="chip" data-search="defiledlands:book_wyrm_scale_golden book wyrm scale golden"><code>defiledlands:book_wyrm_scale_golden</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="defiledlands:umbrium_ingot umbrium ingot"><code>defiledlands:umbrium_ingot</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>firstaid <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="firstaid:morphine morphine"><code>firstaid:morphine</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>iceandfire <span class="nscount">12</span></h4><ul class="chips"><li class="chip" data-search="iceandfire:fire_dragon_flesh fire dragon flesh"><code>iceandfire:fire_dragon_flesh</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:ice_dragon_flesh ice dragon flesh"><code>iceandfire:ice_dragon_flesh</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:lightning_dragon_flesh lightning dragon flesh"><code>iceandfire:lightning_dragon_flesh</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:fire_dragon_blood fire dragon blood"><code>iceandfire:fire_dragon_blood</code><span class="qty">1-2 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:ice_dragon_blood ice dragon blood"><code>iceandfire:ice_dragon_blood</code><span class="qty">1-2 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:lightning_dragon_blood lightning dragon blood"><code>iceandfire:lightning_dragon_blood</code><span class="qty">1-2 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:fire_dragon_heart fire dragon heart"><code>iceandfire:fire_dragon_heart</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:ice_dragon_heart ice dragon heart"><code>iceandfire:ice_dragon_heart</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:lightning_dragon_heart lightning dragon heart"><code>iceandfire:lightning_dragon_heart</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:hydra_fang hydra fang"><code>iceandfire:hydra_fang</code><span class="qty">1-3 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:hydra_heart hydra heart"><code>iceandfire:hydra_heart</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="iceandfire:dragon_skull dragon skull"><code>iceandfire:dragon_skull</code><span class="qty">1-2</span></li></ul></div>
+<div class="ns"><h4>qualitytools <span class="nscount">2</span></h4><ul class="chips"><li class="chip" data-search="qualitytools:emerald_ring emerald ring"><code>qualitytools:emerald_ring</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li>
+<li class="chip" data-search="qualitytools:emerald_amulet emerald amulet"><code>qualitytools:emerald_amulet</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>scalinghealth <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="scalinghealth:heartcontainer heartcontainer"><code>scalinghealth:heartcontainer</code><span class="qty">1-1 <span class="ov" title="quantity overridden for this item">*</span></span></li></ul></div>
+<div class="ns"><h4>xat <span class="nscount">1</span></h4><ul class="chips"><li class="chip" data-search="xat:glowing_gem glowing gem"><code>xat:glowing_gem</code><span class="qty">1-2</span></li></ul></div></section>
+<p class="note">An asterisk marks a quantity overridden for that item rather than inherited from
+its band. Requests draw from the cheapest bands first and reach further up with each slot, so a
+first request is ordinary material and a fifth can ask for a dragon heart.</p>
+
+<h2>Catalysts &mdash; what improves the odds</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Band</th><th class="num">Value</th><th>Relative</th><th>Items</th></tr></thead>
+<tbody><tr><th scope="row"><code>common</code></th><td class="num">1%</td><td class="barcell"><span class="bar" style="width:3.3%"></span></td><td class="members"><code>xat:glowing_powder</code></td></tr>
+<tr><th scope="row"><code>uncommon</code></th><td class="num">2.5%</td><td class="barcell"><span class="bar" style="width:8.3%"></span></td><td class="members"><span class="none">&mdash;</span></td></tr>
+<tr><th scope="row"><code>rare</code></th><td class="num">5%</td><td class="barcell"><span class="bar" style="width:16.7%"></span></td><td class="members"><code>xat:glowing_ingot</code></td></tr>
+<tr><th scope="row"><code>epic</code></th><td class="num">10%</td><td class="barcell"><span class="bar" style="width:33.3%"></span></td><td class="members"><span class="none">&mdash;</span></td></tr>
+<tr><th scope="row"><code>legendary</code></th><td class="num">15%</td><td class="barcell"><span class="bar" style="width:50.0%"></span></td><td class="members"><span class="none">&mdash;</span></td></tr>
+<tr><th scope="row"><code>mythic</code></th><td class="num">30%</td><td class="barcell"><span class="bar" style="width:100.0%"></span></td><td class="members"><code>xat:glowing_gem</code></td></tr></tbody>
+</table>
+</div>
+<p class="note">Catalysts are banked into a villager before a book is offered, and are consumed
+whether the attempt succeeds or fails. Bands with no items are still defined and available &mdash;
+nothing is hard-coded, so anything from any mod can be assigned to one.</p>
+
+<footer>Generated from <code>ModConfig.java</code> defaults &middot; all 132 bounty entries resolve
+against the mods installed in RLCraft Dregora.</footer>
+</div>
+<script>
+var q=document.getElementById('q'),count=document.getElementById('count');
+var chips=[].slice.call(document.querySelectorAll('.chip'));
+function run(){
+  var v=q.value.trim().toLowerCase(),shown=0;
+  chips.forEach(function(c){
+    var hit=!v||c.getAttribute('data-search').indexOf(v)>-1;
+    c.classList.toggle('hidden',!hit); if(hit){shown++;}
+  });
+  [].forEach.call(document.querySelectorAll('.ns'),function(n){
+    n.classList.toggle('hidden',!n.querySelector('.chip:not(.hidden)'));
+  });
+  [].forEach.call(document.querySelectorAll('.band'),function(b){
+    b.classList.toggle('hidden',!b.querySelector('.chip:not(.hidden)'));
+  });
+  count.textContent=shown+' of '+chips.length+' shown';
+}
+q.addEventListener('input',run); run();
+</script>

@@ -159,10 +159,39 @@ public final class QuestBinding {
             return;
         }
 
-        player.sendMessage(new TextComponentString(prefix() + TextFormatting.GREEN
+        ITextComponent message = new TextComponentString(prefix() + TextFormatting.GREEN
                 + (existed ? "Updated " : "Wrote down ") + name + "."
                 + TextFormatting.GRAY + " " + QuestLog.count(log) + "/"
-                + ModConfig.QUEST_LOG_CAPACITY + " logged."));
+                + ModConfig.QUEST_LOG_CAPACITY + " logged. ");
+        // Offered right where the entry was made, because that is the moment you know
+        // whether you meant to log this one - and a full log otherwise needs a page-by-page
+        // hunt for something to drop.
+        message.appendSibling(button("[Remove]", TextFormatting.RED,
+                ClickEvent.Action.RUN_COMMAND,
+                "/villagertomes unlog " + villager.getUniqueID(),
+                "Delete this villager from your log"));
+        player.sendMessage(message);
+    }
+
+    /** Drops one villager's entry by id, which is what the [Remove] button calls. */
+    public static String unlog(EntityPlayer player, String rawId) {
+        ItemStack log = findLog(player);
+        if (log.isEmpty()) {
+            return "You are not carrying a quest log.";
+        }
+        UUID id;
+        try {
+            id = UUID.fromString(rawId.trim());
+        } catch (IllegalArgumentException e) {
+            return "That is not a villager id.";
+        }
+        QuestEntry entry = QuestLog.find(log, id);
+        if (entry == null) {
+            return "That villager is not in your log.";
+        }
+        QuestLog.remove(log, id);
+        return "Removed " + entry.getName() + " from your log. "
+                + QuestLog.count(log) + "/" + ModConfig.QUEST_LOG_CAPACITY + " logged.";
     }
 
     /**

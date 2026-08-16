@@ -93,6 +93,8 @@ public class CommandVillagerTomes extends CommandBase {
             executeName(sender, args);
         } else if ("cancel".equals(subCommand)) {
             executeCancel(sender);
+        } else if ("unlog".equals(subCommand)) {
+            executeUnlog(sender, args);
         } else if ("teach".equals(subCommand)) {
             executeTeach(server, sender, args);
         } else if ("forget".equals(subCommand)) {
@@ -241,6 +243,18 @@ public class CommandVillagerTomes extends CommandBase {
         if (problem != null) {
             reply(sender, TextFormatting.YELLOW + problem);
         }
+    }
+
+    /** Backs the [Remove] button on a log entry. Takes the villager id the button embeds. */
+    private void executeUnlog(ICommandSender sender, String[] args) throws CommandException {
+        if (!(sender instanceof EntityPlayer)) {
+            throw new CommandException("Only a player carries a quest log.");
+        }
+        if (args.length < 2) {
+            throw new WrongUsageException("/villagertomes unlog <villager id>");
+        }
+        reply(sender, TextFormatting.GRAY
+                + QuestBinding.unlog((EntityPlayer) sender, args[1]));
     }
 
     private void executeCancel(ICommandSender sender) throws CommandException {

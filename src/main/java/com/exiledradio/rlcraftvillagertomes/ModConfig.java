@@ -82,6 +82,8 @@ public class ModConfig {
 
     private static final List<String> ORDER_CHANCE = Arrays.asList(
             "ENABLE_CHANCE", "BASE_SUCCESS_CHANCE", "CHANCE_PER_SLOT", "MAX_SUCCESS_CHANCE",
+            "MAX_CHANCE_PER_SLOT", "CONFIRM_BEFORE_TEACHING", "CONFIRM_DEBOUNCE_MS",
+            "CONFIRM_TIMEOUT_SECONDS",
             "MIN_SUCCESS_CHANCE",
             "PITY_PER_BOOK_LEVEL", "ABSOLUTE_MAX_CHANCE", "CONSUME_BOOK_ON_FAILURE",
             "CONSUME_CATALYSTS_ON_FAILURE");
@@ -191,6 +193,10 @@ public class ModConfig {
     public static float BASE_SUCCESS_CHANCE = 30.0F;
     public static float CHANCE_PER_SLOT = 10.0F;
     public static float MAX_SUCCESS_CHANCE = 80.0F;
+    public static float MAX_CHANCE_PER_SLOT = 5.0F;
+    public static boolean CONFIRM_BEFORE_TEACHING = true;
+    public static int CONFIRM_DEBOUNCE_MS = 500;
+    public static int CONFIRM_TIMEOUT_SECONDS = 15;
     public static float MIN_SUCCESS_CHANCE = 1.0F;
     public static float PITY_PER_BOOK_LEVEL = 5.0F;
     public static float ABSOLUTE_MAX_CHANCE = 100.0F;
@@ -219,6 +225,120 @@ public class ModConfig {
             "high=1-2",
     };
     public static String[] BOUNTY_ITEMS = {
+            // --- low: things you gather by the stack ---
+            "minecraft:glass=low",
+            "minecraft:spider_eye=low,4-10",
+            "minecraft:potato=low",
+            "minecraft:carrot=low",
+            "minecraft:quartz=low",
+            "minecraft:netherbrick=low",
+            "minecraft:flint=low",
+            "minecraft:rotten_flesh=low",
+            "minecraft:string=low",
+            "minecraft:bone=low",
+            "minecraft:gunpowder=low,4-12",
+            "minecraft:reeds=low",
+            "minecraft:sugar=low",
+            "minecraft:cookie=low",
+            "minecraft:melon=low",
+            "minecraft:bread=low",
+            "minecraft:apple=low",
+            "minecraft:fish=low,4-10",
+            "minecraft:cooked_rabbit=low,3-8",
+            "minecraft:cooked_mutton=low,3-8",
+            "minecraft:cooked_porkchop=low,3-8",
+            "minecraft:cooked_chicken=low,3-8",
+            "minecraft:cooked_beef=low,3-8",
+            "minecraft:pumpkin_pie=low,2-6",
+            "foodexpansion:itemcookedsquid=low,3-8",
+            "rustic:wildberries=low,4-12",
+            "rustic:grapes=low,4-12",
+            "lycanitesmobs:cooked_silex_meat=low,2-6",
+            "lycanitesmobs:cooked_maka_meat=low,2-6",
+            "lycanitesmobs:cooked_arisaur_meat=low,2-6",
+            "lycanitesmobs:cooked_bobeko_meat=low,2-6",
+            "lycanitesmobs:cooked_krake_meat=low,2-6",
+            "lycanitesmobs:cooked_aspid_meat=low,2-6",
+            "lycanitesmobs:cooked_joust_meat=low,2-6",
+            "defiledlands:book_wyrm_cooked=low,2-6",
+            "simpledifficulty:frost_powder=low,4-10",
+            "iceandfire:pixie_dust=low,2-6",
+            "familiarfauna:pixie_dust=low,2-6",
+
+            // --- mid: crafted, hunted, or one step off the beaten path ---
+            "minecraft:stone_pickaxe=mid",
+            "minecraft:stone_axe=mid",
+            "minecraft:stone_shovel=mid",
+            "minecraft:stone_sword=mid",
+            "minecraft:iron_pickaxe=mid,1-3",
+            "minecraft:iron_axe=mid,1-3",
+            "minecraft:iron_shovel=mid,1-3",
+            "minecraft:iron_sword=mid,1-3",
+            "minecraft:golden_pickaxe=mid,1-3",
+            "minecraft:golden_axe=mid,1-3",
+            "minecraft:golden_shovel=mid,1-3",
+            "minecraft:golden_sword=mid,1-3",
+            "minecraft:flint_and_steel=mid,1-2",
+            "minecraft:saddle=mid,1-2",
+            "minecraft:tnt=mid,2-6",
+            "minecraft:compass=mid,1-2",
+            "minecraft:clock=mid,1-2",
+            "minecraft:ender_pearl=mid,2-6",
+            "minecraft:skull:0=mid,1-2",
+            "minecraft:skull:2=mid,1-2",
+            "simpledifficulty:frost_rod=mid",
+            "iceandfire:sapphire_gem=mid",
+            "iceandfire:troll_tusk=mid,1-4",
+            "iceandfire:troll_leather_forest=mid,1-4",
+            "iceandfire:troll_leather_frost=mid,1-4",
+            "iceandfire:troll_leather_mountain=mid,1-4",
+            "iceandfire:stymphalian_bird_feather=mid,2-6",
+            "iceandfire:amphithere_feather=mid,1-4",
+            "iceandfire:sea_serpent_fang=mid,1-4",
+            "defiledlands:foul_slime=mid,2-6",
+            "defiledlands:foul_candy=mid,2-6",
+            "defiledlands:book_wyrm_scale=mid,2-6",
+            "scalinghealth:heartdust=mid,2-6",
+            "firstaid:bandage=mid,2-6",
+            "firstaid:plaster=mid,2-6",
+            "roughtweaks:bandage=mid,2-6",
+            "roughtweaks:plaster=mid,2-6",
+            "armorunder:heating_goo=mid,1-4",
+            "armorunder:cooling_goo=mid,1-4",
+            "foodexpansion:itemchocolatebar=mid,2-6",
+            "sereneseasons:greenhouse_glass=mid,2-6",
+            "toolbelt:belt=mid,1-1",
+            "inspirations:barometer=mid,1-1",
+
+            // --- high: trophies and things you had to kill something for ---
+            "minecraft:diamond_pickaxe=high",
+            "minecraft:diamond_axe=high",
+            "minecraft:diamond_shovel=high",
+            "minecraft:diamond_sword=high",
+            "minecraft:ghast_tear=high,1-3",
+            "firstaid:morphine=high,1-3",
+            "defiledlands:book_wyrm_scale_golden=high,1-3",
+            "defiledlands:umbrium_ingot=high,1-3",
+            "scalinghealth:heartcontainer=high,1-1",
+            "qualitytools:emerald_ring=high,1-1",
+            "qualitytools:emerald_amulet=high,1-1",
+            "bountifulbaubles:trinketballoon=high,1-1",
+            "bountifulbaubles:trinketmagiclenses=high,1-1",
+            "bountifulbaubles:crowngold=high,1-1",
+            "bountifulbaubles:amuletsinempty=high,1-1",
+            "bountifulbaubles:amuletcross=high,1-1",
+            "iceandfire:fire_dragon_flesh=high,1-3",
+            "iceandfire:ice_dragon_flesh=high,1-3",
+            "iceandfire:lightning_dragon_flesh=high,1-3",
+            "iceandfire:fire_dragon_blood=high,1-2",
+            "iceandfire:ice_dragon_blood=high,1-2",
+            "iceandfire:lightning_dragon_blood=high,1-2",
+            "iceandfire:fire_dragon_heart=high,1-1",
+            "iceandfire:ice_dragon_heart=high,1-1",
+            "iceandfire:lightning_dragon_heart=high,1-1",
+            "iceandfire:hydra_fang=high,1-3",
+            "iceandfire:hydra_heart=high,1-1",
+
             // Lowest - the stuff you keep in stacks.
             "minecraft:coal:0=low",
             "minecraft:redstone=low",
@@ -944,6 +1064,35 @@ public class ModConfig {
                 QUEST_LOG_CAPACITY_COMMENT);
     }
 
+    private static final String MAX_CHANCE_PER_SLOT_COMMENT =
+            "How many percentage points the CEILING rises per slot a villager has unlocked.\n"
+                    + "\n"
+                    + "MAX_SUCCESS_CHANCE is the ceiling for a villager on its first slot. With\n"
+                    + "this at 5, a villager four slots deep can be pushed to 100 instead of 80.\n"
+                    + "So committing to one villager pays twice - once in its base odds, and again\n"
+                    + "in how far catalysts can take it.\n"
+                    + "\n"
+                    + "Set to 0 for a flat ceiling that ignores how developed a villager is.\n"
+                    + "Failure pity is added on top of the ceiling either way and is not bound by\n"
+                    + "it - see PITY_PER_BOOK_LEVEL.";
+
+    private static final String CONFIRM_BEFORE_TEACHING_COMMENT =
+            "If true (default), offering a book asks before it commits.\n"
+                    + "\n"
+                    + "The first sneak-click reports the odds and waits; a second commits the book.\n"
+                    + "Losing a Sharpness V to a click you did not mean to make is the worst thing\n"
+                    + "that can happen in this mod, and a confirmation costs one click to avoid it.\n"
+                    + "\n"
+                    + "Set to false to hand books over immediately, which is how it behaved before\n"
+                    + "the prompt existed.";
+
+    private static final String CONFIRM_DEBOUNCE_COMMENT =
+            "How long after the prompt a second click is ignored, in milliseconds.\n"
+                    + "\n"
+                    + "500 (default) is there because the prompt appears on a click, and a\n"
+                    + "double-click would otherwise answer a question the player has not read yet.\n"
+                    + "Clicks inside this window do nothing at all rather than confirming.";
+
     // ------------------------------------------------------------------ chance
 
     private static void loadChance() {
@@ -988,6 +1137,24 @@ public class ModConfig {
                         + "Banking beyond this is refused rather than wasted: a villager already at\n"
                         + "the ceiling hands your catalyst back."
         );
+
+        MAX_CHANCE_PER_SLOT = config.getFloat(
+                "MAX_CHANCE_PER_SLOT", CATEGORY_CHANCE, 5.0F, 0.0F, 100.0F,
+                MAX_CHANCE_PER_SLOT_COMMENT);
+
+        CONFIRM_BEFORE_TEACHING = config.getBoolean(
+                "CONFIRM_BEFORE_TEACHING", CATEGORY_CHANCE, true,
+                CONFIRM_BEFORE_TEACHING_COMMENT);
+
+        CONFIRM_DEBOUNCE_MS = config.getInt(
+                "CONFIRM_DEBOUNCE_MS", CATEGORY_CHANCE, 500, 0, 5000,
+                CONFIRM_DEBOUNCE_COMMENT);
+
+        CONFIRM_TIMEOUT_SECONDS = config.getInt(
+                "CONFIRM_TIMEOUT_SECONDS", CATEGORY_CHANCE, 15, 1, 300,
+                "How long a pending confirmation stays open, in seconds.\n"
+                        + "After this it lapses and the next click asks again rather than committing\n"
+                        + "a book you had forgotten about.");
 
         MIN_SUCCESS_CHANCE = config.getFloat(
                 "MIN_SUCCESS_CHANCE", CATEGORY_CHANCE, 1.0F, 0.0F, 100.0F,
@@ -1263,6 +1430,9 @@ public class ModConfig {
         if (REQUEST_TIERS_BASE < 1) REQUEST_TIERS_BASE = 1;
         if (REQUEST_TIERS_PER_SLOT < 0) REQUEST_TIERS_PER_SLOT = 0;
         if (CHANCE_PER_SLOT < 0.0F) CHANCE_PER_SLOT = 0.0F;
+        if (MAX_CHANCE_PER_SLOT < 0.0F) MAX_CHANCE_PER_SLOT = 0.0F;
+        if (CONFIRM_DEBOUNCE_MS < 0) CONFIRM_DEBOUNCE_MS = 0;
+        if (CONFIRM_TIMEOUT_SECONDS < 1) CONFIRM_TIMEOUT_SECONDS = 1;
         if (PITY_PER_BOOK_LEVEL < 0.0F) PITY_PER_BOOK_LEVEL = 0.0F;
         if (ABSOLUTE_MAX_CHANCE < MAX_SUCCESS_CHANCE) ABSOLUTE_MAX_CHANCE = MAX_SUCCESS_CHANCE;
         if (ABSOLUTE_MAX_CHANCE > 100.0F) ABSOLUTE_MAX_CHANCE = 100.0F;
@@ -1417,15 +1587,27 @@ public class ModConfig {
     // ------------------------------------------------------------- lookups
 
     /**
-     * The floor an attempt starts from, before banked catalysts.
+     * The ceiling catalysts can reach on this villager, which rises as it opens slots.
      *
-     * <p>Base, plus the pity earned by failing this enchantment on this villager, capped by
-     * {@link #MAX_SUCCESS_CHANCE}. Deliberately separate from the pity half so both the chat
-     * readout and the roll are built from the same pieces and cannot disagree.
+     * <p>A villager that has been paid into repeatedly is not just more likely to take a
+     * book, it can be pushed further than a fresh one - so the reward for committing to one
+     * villager shows up twice, once in the base and once in how high it can be taken.
+     */
+    public static float getMaxChance(int slotsUnlocked) {
+        float ceiling = MAX_SUCCESS_CHANCE + Math.max(0, slotsUnlocked) * MAX_CHANCE_PER_SLOT;
+        return Math.min(ceiling, ABSOLUTE_MAX_CHANCE);
+    }
+
+    /**
+     * Base plus banked catalysts, held to this villager's ceiling.
+     *
+     * <p>Deliberately separate from the pity half so both the chat readout and the roll are
+     * built from the same pieces and cannot disagree - and so pity can be stacked on top of
+     * a ceiling that catalysts alone are not allowed to pass.
      */
     public static float getPreparedChance(int slotsFilled, float banked) {
         float prepared = getBaseChance(slotsFilled) + Math.max(0.0F, banked);
-        return Math.min(prepared, MAX_SUCCESS_CHANCE);
+        return Math.min(prepared, getMaxChance(slotsFilled));
     }
 
     /** What a villager is worth before pity or catalysts, given how many slots it has filled. */
