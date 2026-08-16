@@ -240,7 +240,7 @@ public final class TomeLearningHandler {
             return;
         }
         if (verdict == TeachConfirmations.Verdict.ASK) {
-            float odds = ModConfig.getTotalChance(SlotRequests.chanceSlots(tomes),
+            float odds = ModConfig.getTotalChance(SlotRequests.unlockedSlots(tomes),
                     tomes.getPityBonus(gambledOn), tomes.getBankedChance());
             ITextComponent ask = new TextComponentString(PREFIX + TextFormatting.YELLOW
                     + "Give ");
@@ -255,7 +255,7 @@ public final class TomeLearningHandler {
 
         if (ModConfig.ENABLE_CHANCE && !player.capabilities.isCreativeMode) {
             float chance = ModConfig.getTotalChance(
-                    SlotRequests.chanceSlots(tomes), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
+                    SlotRequests.unlockedSlots(tomes), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
 
             if (villager.world.rand.nextFloat() * 100.0F >= chance) {
                 failAttempt(player, villager, held, tomes, gambledOn,
@@ -292,11 +292,15 @@ public final class TomeLearningHandler {
         // Measured against the floor with no pity, because pity is per enchantment and this
         // deposit is not about any particular book.
         // Compared against the preparation ceiling, not the absolute one: pity can push a
-        // villager past 80% but it is not something a catalyst can add to.
-        float current = ModConfig.getPreparedChance(SlotRequests.chanceSlots(tomes), tomes.getBankedChance());
-        if (current >= ModConfig.MAX_SUCCESS_CHANCE) {
-            refuse(player, villager, held, "This villager is already at the maximum "
-                    + percent(ModConfig.MAX_SUCCESS_CHANCE) + " chance - keep that for another.");
+        // villager past its ceiling but it is not something a catalyst can add to. And it has
+        // to be THIS villager's ceiling rather than the flat config value, or a developed
+        // librarian whose ceiling has risen to 90 still gets its catalysts refused at 75.
+        int unlocked = SlotRequests.unlockedSlots(tomes);
+        float ceiling = ModConfig.getMaxChance(unlocked);
+        float current = ModConfig.getPreparedChance(unlocked, tomes.getBankedChance());
+        if (current >= ceiling) {
+            refuse(player, villager, held, "This villager is already at its maximum "
+                    + percent(ceiling) + " chance - keep that for another.");
             return;
         }
 
@@ -315,7 +319,7 @@ public final class TomeLearningHandler {
         spawnParticles(villager, EnumParticleTypes.VILLAGER_HAPPY);
 
         if (ModConfig.ANNOUNCE_LEARNED) {
-            float now = ModConfig.getTotalChance(SlotRequests.chanceSlots(tomes), 0.0F,
+            float now = ModConfig.getTotalChance(SlotRequests.unlockedSlots(tomes), 0.0F,
                     tomes.getBankedChance());
             ITextComponent message = new TextComponentString(PREFIX + TextFormatting.GREEN
                     + "Banked ");
@@ -346,11 +350,15 @@ public final class TomeLearningHandler {
         String slots = open + " slot" + (open == 1 ? "" : "s") + " free";
 
         if (ModConfig.ENABLE_CHANCE) {
-            float total = ModConfig.getTotalChance(
-                    SlotRequests.chanceSlots(tomes), 0.0F, tomes.getBankedChance());
+            int unlocked = SlotRequests.unlockedSlots(tomes);
+            float total = ModConfig.getTotalChance(unlocked, 0.0F, tomes.getBankedChance());
+            // The ceiling is shown alongside because it moves per villager. Without it there
+            // is no way to tell whether catalysts have stopped helping because you are done
+            // or because this particular librarian cannot be taken any higher yet.
             player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
                     + "Success: " + TextFormatting.WHITE + percent(total)
-                    + TextFormatting.GRAY + " - " + slots));
+                    + TextFormatting.GRAY + " of " + percent(ModConfig.getMaxChance(unlocked))
+                    + " max - " + slots));
             sendBonusLines(player, tomes);
         } else {
             player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
@@ -373,7 +381,7 @@ public final class TomeLearningHandler {
      * have no tome to hang a line off.
      */
     private static void sendBonusLines(EntityPlayer player, ITomeKnowledge tomes) {
-        int filled = SlotRequests.chanceSlots(tomes);
+        int unlocked = SlotRequests.unlockedSlots(tomes);
         float banked = tomes.getBankedChance();
         for (Map.Entry<ResourceLocation, Float> owed : tomes.pityView().entrySet()) {
             if (owed.getValue().floatValue() <= 0.0F) {
@@ -386,7 +394,7 @@ public final class TomeLearningHandler {
                     + " +" + percent(owed.getValue().floatValue())
                     + " | " + TextFormatting.WHITE
                     + percent(ModConfig.getTotalChance(
-                            filled, owed.getValue().floatValue(), banked))));
+                            unlocked, owed.getValue().floatValue(), banked))));
         }
     }
 
@@ -447,7 +455,7 @@ public final class TomeLearningHandler {
 
         if (ModConfig.ANNOUNCE_REJECTED) {
             float next = ModConfig.getTotalChance(
-                    SlotRequests.chanceSlots(tomes), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
+                    SlotRequests.unlockedSlots(tomes), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
             player.sendMessage(new TextComponentString(PREFIX + TextFormatting.RED
                     + "The binding failed at " + percent(chance) + "."
                     + TextFormatting.GRAY + " Next attempt at that enchantment here: "
@@ -469,27 +477,56 @@ public final class TomeLearningHandler {
     }
 
     /**
-     * Stops the item in hand from also being used when we have already answered the click.
+     * Two jobs, in order: swallow the follow-up to a click we already answered, then handle a
+     * sneak-click that was not aimed at a villager at all.
      *
      * <p>Cancelling the entity interaction is not enough on its own. The client's
      * {@code rightClickMouse} tries the entity first and, seeing no success come back from
      * its own copy of the world, falls through to using the held item - so a book and quill
      * opened its writing screen a moment after the villager had already dealt with it, and
-     * the log only appeared once that screen was closed.
+     * the log only appeared once that screen was closed. The claim is keyed on the tick
+     * rather than on the item so it covers anything else that might gain a right-click
+     * behaviour later, and scoped to a single tick so it can never swallow a genuine,
+     * separate click.
      *
-     * <p>Keyed on the tick rather than on the item so it covers anything else that might
-     * gain a right-click behaviour later, and scoped to a single tick so it can never
-     * swallow a genuine, separate click.
+     * <p>What is left after that is a sneak-click on nothing, which is where the quest log
+     * roster lives.
      */
     @SubscribeEvent
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        if (event.getWorld().isRemote) {
-            return;
+        EntityPlayer player = event.getEntityPlayer();
+        boolean server = !event.getWorld().isRemote;
+
+        if (server) {
+            Long claimed = CLAIMED.get(player.getUniqueID());
+            if (claimed != null
+                    && event.getWorld().getTotalWorldTime() - claimed.longValue() <= 1L) {
+                event.setCanceled(true);
+                return;
+            }
         }
-        Long claimed = CLAIMED.get(event.getEntityPlayer().getUniqueID());
-        if (claimed != null
-                && event.getWorld().getTotalWorldTime() - claimed.longValue() <= 1L) {
+
+        // Sneak-clicking nothing in particular with the log lists it in chat instead of
+        // opening it. Reading the book is still a plain right-click, so nothing is lost.
+        //
+        // Cancelled on BOTH sides, and this is the only handler here that is. The client runs
+        // useItemRightClick against its own copy of the world, and ItemWrittenBook opens the
+        // screen from there - so a server-only cancel stops nothing the player can see. The
+        // listing itself stays server-side: PlayerControllerMP sends its packet before the
+        // event is fired, so the server hears about the click either way, and printing on
+        // both sides would print everything twice.
+        //
+        // On a vanilla client the screen still opens, since there is no handler there to
+        // cancel. The list is waiting in chat behind it, which is the right way for this to
+        // degrade on the unmodded clients the rest of the mod is built to support.
+        if (player.isSneaking() && QuestLog.isLog(event.getItemStack())) {
             event.setCanceled(true);
+            if (server) {
+                QuestBinding.listEntries(player, event.getItemStack());
+                // Stops the offhand's click listing it a second time when both hands
+                // somehow hold a log.
+                claimClick(player);
+            }
         }
     }
 

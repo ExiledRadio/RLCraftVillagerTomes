@@ -197,7 +197,7 @@ public class ModConfig {
     public static boolean ENABLE_CHANCE = true;
     public static float BASE_SUCCESS_CHANCE = 30.0F;
     public static float CHANCE_PER_SLOT = 10.0F;
-    public static float MAX_SUCCESS_CHANCE = 80.0F;
+    public static float MAX_SUCCESS_CHANCE = 75.0F;
     public static float MAX_CHANCE_PER_SLOT = 5.0F;
     public static boolean CONFIRM_BEFORE_TEACHING = true;
     public static int CONFIRM_DEBOUNCE_MS = 500;
@@ -1106,10 +1106,16 @@ public class ModConfig {
     private static final String MAX_CHANCE_PER_SLOT_COMMENT =
             "How many percentage points the CEILING rises per slot a villager has unlocked.\n"
                     + "\n"
-                    + "MAX_SUCCESS_CHANCE is the ceiling for a villager on its first slot. With\n"
-                    + "this at 5, a villager four slots deep can be pushed to 100 instead of 80.\n"
+                    + "Every unlocked slot counts, including the first, so at the defaults of\n"
+                    + "MAX_SUCCESS_CHANCE=75 and this at 5 the ceiling runs:\n"
+                    + "\n"
+                    + "  1 slot  80%      4 slots  95%\n"
+                    + "  2 slots 85%      5 slots  100%\n"
+                    + "  3 slots 90%\n"
+                    + "\n"
                     + "So committing to one villager pays twice - once in its base odds, and again\n"
-                    + "in how far catalysts can take it.\n"
+                    + "in how far catalysts can take it. A fully unlocked librarian is the only\n"
+                    + "thing in the mod that can be made a sure bet.\n"
                     + "\n"
                     + "Set to 0 for a flat ceiling that ignores how developed a villager is.\n"
                     + "Failure pity is added on top of the ceiling either way and is not bound by\n"
@@ -1159,22 +1165,45 @@ public class ModConfig {
         );
 
         BASE_SUCCESS_CHANCE = config.getFloat(
-                "BASE_SUCCESS_CHANCE", CATEGORY_CHANCE, 50.0F, 0.0F, 100.0F,
-                "The chance a book is accepted with nothing banked, as a percentage.\n"
-                        + "50 (default) makes an unaided attempt a coin flip, which is what makes\n"
-                        + "catalysts worth gathering at all."
+                "BASE_SUCCESS_CHANCE", CATEGORY_CHANCE, 30.0F, 0.0F, 100.0F,
+                "The chance a book is accepted on a villager's first slot, as a percentage.\n"
+                        + "\n"
+                        + "30 (default) means an unaided attempt on a fresh librarian usually fails,\n"
+                        + "which is what makes catalysts worth gathering at all. The first slot gets\n"
+                        + "no per-slot bonus, so this is exactly what a newly opened villager reads.\n"
+                        + "See CHANCE_PER_SLOT for what each slot after it adds."
+        );
+
+        CHANCE_PER_SLOT = config.getFloat(
+                "CHANCE_PER_SLOT", CATEGORY_CHANCE, 10.0F, 0.0F, 100.0F,
+                "How many percentage points the BASE chance rises per slot beyond the first.\n"
+                        + "\n"
+                        + "The first slot adds nothing, so at the defaults of BASE_SUCCESS_CHANCE=30\n"
+                        + "and this at 10 the base runs:\n"
+                        + "\n"
+                        + "  1 slot  30%      4 slots  60%\n"
+                        + "  2 slots 40%      5 slots  70%\n"
+                        + "  3 slots 50%\n"
+                        + "\n"
+                        + "This is what a villager is worth before any catalysts, so a developed\n"
+                        + "librarian needs fewer of them to reach its ceiling. Set to 0 to make every\n"
+                        + "villager equally likely regardless of how much you have paid into it."
         );
 
         MAX_SUCCESS_CHANCE = config.getFloat(
-                "MAX_SUCCESS_CHANCE", CATEGORY_CHANCE, 80.0F, 1.0F, 100.0F,
-                "The highest chance any amount of catalysts can reach, as a percentage.\n"
+                "MAX_SUCCESS_CHANCE", CATEGORY_CHANCE, 75.0F, 1.0F, 100.0F,
+                "The ceiling before any slots are unlocked, as a percentage.\n"
                         + "\n"
-                        + "80 (default) deliberately leaves teaching a gamble no matter how much you\n"
-                        + "pour into it - one attempt in five still fails at the ceiling. Set to 100\n"
-                        + "if you would rather enough preparation guarantee the result.\n"
+                        + "This is a notional figure - every villager you can actually hand a book to\n"
+                        + "has at least one slot open, so the lowest ceiling in play is this plus one\n"
+                        + "step of MAX_CHANCE_PER_SLOT. At the defaults that is 80 on a one-slot\n"
+                        + "villager, rising to 100 on a five-slot one.\n"
                         + "\n"
-                        + "Banking beyond this is refused rather than wasted: a villager already at\n"
-                        + "the ceiling hands your catalyst back."
+                        + "Raise this to make even a fresh villager pushable to certainty; lower it\n"
+                        + "to keep a gamble in it at every depth.\n"
+                        + "\n"
+                        + "Banking beyond the ceiling is refused rather than wasted: a villager\n"
+                        + "already at its own maximum hands your catalyst back."
         );
 
         MAX_CHANCE_PER_SLOT = config.getFloat(
@@ -1231,13 +1260,14 @@ public class ModConfig {
                         + "is capped at MAX_SUCCESS_CHANCE, and what you are owed for past failures is\n"
                         + "added on top of that cap.\n"
                         + "\n"
-                        + "So a villager sitting at the 80% preparation ceiling that already owes you\n"
-                        + "15% from a burnt book reads 95%, and enough losses eventually reach 100%.\n"
-                        + "No amount of preparation alone ever gets there - only bad luck does, which\n"
-                        + "means the guarantee is something you are compensated with rather than\n"
-                        + "something you can buy.\n"
+                        + "So a one-slot villager sitting at its 80% preparation ceiling that already\n"
+                        + "owes you 15% from a burnt book reads 95%, and enough losses eventually\n"
+                        + "reach 100% on any villager at all. Preparation alone only gets there on a\n"
+                        + "fully unlocked one - everywhere shallower, certainty is something you are\n"
+                        + "compensated with rather than something you can buy.\n"
                         + "\n"
-                        + "Set to 80 to match MAX_SUCCESS_CHANCE and take the escape hatch away."
+                        + "Set this to match MAX_SUCCESS_CHANCE to take the escape hatch away, though\n"
+                        + "note that clamps the per-slot ceiling too."
         );
 
         CONSUME_BOOK_ON_FAILURE = config.getBoolean(
@@ -1629,6 +1659,11 @@ public class ModConfig {
      * <p>A villager that has been paid into repeatedly is not just more likely to take a
      * book, it can be pushed further than a fresh one - so the reward for committing to one
      * villager shows up twice, once in the base and once in how high it can be taken.
+     *
+     * <p>Every slot counts here, including the first, so the configured value is the ceiling
+     * for a villager with nothing unlocked at all - a number nobody ever sees in play. At the
+     * defaults that puts one slot at 80 and five at 100. The base ladder below deliberately
+     * counts differently; see {@link #getBaseChance}.
      */
     public static float getMaxChance(int slotsUnlocked) {
         float ceiling = MAX_SUCCESS_CHANCE + Math.max(0, slotsUnlocked) * MAX_CHANCE_PER_SLOT;
@@ -1642,19 +1677,26 @@ public class ModConfig {
      * built from the same pieces and cannot disagree - and so pity can be stacked on top of
      * a ceiling that catalysts alone are not allowed to pass.
      */
-    public static float getPreparedChance(int slotsFilled, float banked) {
-        float prepared = getBaseChance(slotsFilled) + Math.max(0.0F, banked);
-        return Math.min(prepared, getMaxChance(slotsFilled));
+    public static float getPreparedChance(int slotsUnlocked, float banked) {
+        float prepared = getBaseChance(slotsUnlocked) + Math.max(0.0F, banked);
+        return Math.min(prepared, getMaxChance(slotsUnlocked));
     }
 
-    /** What a villager is worth before pity or catalysts, given how many slots it has filled. */
-    public static float getBaseChance(int slotsFilled) {
-        return BASE_SUCCESS_CHANCE + Math.max(0, slotsFilled) * CHANCE_PER_SLOT;
+    /**
+     * What a villager is worth before pity or catalysts, given how many slots it has open.
+     *
+     * <p>The first slot is free of the per-slot bonus, so a villager that has only just been
+     * opened up is worth exactly BASE_SUCCESS_CHANCE rather than one step above it. That is
+     * the opposite of {@link #getMaxChance}, which counts every slot - the base is a floor a
+     * player earns their way up from, the ceiling is a reward the first payment already buys.
+     */
+    public static float getBaseChance(int slotsUnlocked) {
+        return BASE_SUCCESS_CHANCE + Math.max(0, slotsUnlocked - 1) * CHANCE_PER_SLOT;
     }
 
     /** The final odds of an attempt: floor plus banked catalysts, clamped to the limits. */
-    public static float getTotalChance(int slotsFilled, float pity, float banked) {
-        float total = getPreparedChance(slotsFilled, banked) + Math.max(0.0F, pity);
+    public static float getTotalChance(int slotsUnlocked, float pity, float banked) {
+        float total = getPreparedChance(slotsUnlocked, banked) + Math.max(0.0F, pity);
         if (total > ABSOLUTE_MAX_CHANCE) total = ABSOLUTE_MAX_CHANCE;
         if (total < MIN_SUCCESS_CHANCE) total = MIN_SUCCESS_CHANCE;
         return total;

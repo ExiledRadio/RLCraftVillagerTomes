@@ -76,7 +76,7 @@ A librarian on its first slot accepts a book **30%** of the time. Every slot it 
 
 Those numbers come straight from what each costs to craft — an ingot is four powder, a gem is four ingots plus four powder plus a diamond block. A single gem takes a fresh villager from its base to its ceiling.
 
-The ceiling starts at **80%** and rises **+5 per slot unlocked**, so a developed villager can be pushed past it. Preparation never quite guarantees the result on a young one, which is the point.
+The ceiling is **80%** on a one-slot librarian and rises **+5 per slot unlocked**, reaching **100% on a fully opened one**. So preparation never quite guarantees the result on a young villager, and does on a villager you have paid into five times — which is the reward for committing to one rather than spreading books across a dozen.
 
 Every attempt asks before it commits, and reports the odds while it asks.
 
@@ -121,6 +121,8 @@ Slot 3 needs:
 ```
 
 Naming a villager also sets its name tag, so the book and the world agree. Entries update as you deliver and cross themselves off when the slot is paid for. Ten villagers per book.
+
+Sneak-click with the log while pointing at nothing and it lists every villager in chat with a **[Remove]** button on each, so an entry for a librarian that died or that you will never walk back to is one click to clear rather than a slot lost forever. `/villagertomes log` does the same thing.
 
 It is a **vanilla written book**, not a custom item — which is the only reason this mod still works on a completely unmodded client.
 

@@ -162,11 +162,11 @@ Update on the villager tome mod I posted a while back. It used to be simple: han
 
 Slots have to be bought now. Every librarian rolls its own shopping list - two items for its first slot, six by its fifth, and the later ones start asking for dragon hearts instead of coal. Deliver the lot and it opens up. The list never re-rolls, so a villager that wants something you can't get is a villager you walk away from.
 
-Handing the book over is a roll. A fresh librarian takes it 30% of the time, and every slot it has open adds 10. You can stack the odds beforehand by feeding it glowing powder, ingots or gems - a gem alone takes a fresh one from base to ceiling - and it tells you the odds and asks before it commits.
+Handing the book over is a roll. A fresh librarian takes it 30% of the time, and every slot it has open adds 10. You can stack the odds beforehand by feeding it glowing powder, ingots or gems. The ceiling moves too - 80% on a one-slot villager, 100% on one you've opened all five - so a fully developed librarian plus a single gem is the only sure bet in the mod. It tells you the odds and asks before it commits.
 
 If it fails, the book is gone and so is everything you banked. What you get instead is a grudge: each failure raises the floor by 5% per level of the book that burned, on that villager, for that enchantment. Lose a Sharpness V and you're 25 points closer next time. That bonus stacks above the ceiling, so enough bad luck eventually gets you there anyway.
 
-There's a quest log too - sneak-click a librarian with a book and quill and it writes down what that villager wants and where it lives, then crosses it off when you're done. It's a normal written book rather than a custom item, which is why the mod still runs on a vanilla client with nothing installed.
+There's a quest log too - sneak-click a librarian with a book and quill and it writes down what that villager wants and where it lives, then crosses it off when you're done. Sneak-click holding it at nothing and the whole list prints to chat with a remove button per villager, for the ones that died on you. It's a normal written book rather than a custom item, which is why the mod still runs on a vanilla client with nothing installed.
 
 All of it is off-switchable if you liked it the old way. 152 items ship in the bounty list, and anything from a mod you don't have is skipped, so it works on any 1.12.2 pack and not just RLCraft.
 

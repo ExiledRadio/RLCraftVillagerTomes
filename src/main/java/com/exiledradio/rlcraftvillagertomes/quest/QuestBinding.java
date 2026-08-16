@@ -1,6 +1,7 @@
 package com.exiledradio.rlcraftvillagertomes.quest;
 
 import com.exiledradio.rlcraftvillagertomes.ModConfig;
+import com.exiledradio.rlcraftvillagertomes.bounty.BountyItem;
 import com.exiledradio.rlcraftvillagertomes.bounty.SlotRequests;
 import com.exiledradio.rlcraftvillagertomes.capability.CapabilityTomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
@@ -15,6 +16,7 @@ import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -171,6 +173,53 @@ public final class QuestBinding {
                 "/villagertomes unlog " + villager.getUniqueID(),
                 "Delete this villager from your log"));
         player.sendMessage(message);
+    }
+
+    /**
+     * Prints the whole log to chat, one line per villager, each with its own remove button.
+     *
+     * <p>The written book renders the same entries far more nicely, so this is not a
+     * duplicate of it - it exists because the book cannot carry buttons. Removing an entry
+     * any other way means standing next to the villager it belongs to, and the entries you
+     * most want gone are exactly the ones you cannot get back to: a villager that died, got
+     * carted off by a zombie siege, or is buried under a village you have since abandoned.
+     * Those would otherwise sit in the book forever, eating one of ten slots.
+     */
+    public static void listEntries(EntityPlayer player, ItemStack log) {
+        List<QuestEntry> entries = QuestLog.readEntries(log);
+        if (entries.isEmpty()) {
+            player.sendMessage(new TextComponentString(prefix() + TextFormatting.GRAY
+                    + "Your log is empty. Sneak-click a villager with it to write one down."));
+            return;
+        }
+
+        player.sendMessage(new TextComponentString(prefix() + TextFormatting.AQUA
+                + "Quest log " + TextFormatting.WHITE + entries.size() + "/"
+                + ModConfig.QUEST_LOG_CAPACITY + TextFormatting.GRAY
+                + " - [Remove] drops an entry without needing the villager"));
+
+        for (QuestEntry entry : entries) {
+            int outstanding = 0;
+            for (BountyItem line : entry.getWanted()) {
+                if (!line.isSatisfied()) {
+                    outstanding++;
+                }
+            }
+
+            ITextComponent row = new TextComponentString(TextFormatting.WHITE + "  "
+                    + entry.getName() + TextFormatting.DARK_GRAY + "  "
+                    + entry.getX() + " " + entry.getY() + " " + entry.getZ()
+                    + TextFormatting.GRAY + "  slot " + entry.getSlot() + ", "
+                    + (outstanding == 0
+                            ? "paid off"
+                            : outstanding + " item" + (outstanding == 1 ? "" : "s") + " left")
+                    + " ");
+            row.appendSibling(button("[Remove]", TextFormatting.RED,
+                    ClickEvent.Action.RUN_COMMAND,
+                    "/villagertomes unlog " + entry.getVillager(),
+                    "Delete " + entry.getName() + " from your log"));
+            player.sendMessage(row);
+        }
     }
 
     /** Drops one villager's entry by id, which is what the [Remove] button calls. */

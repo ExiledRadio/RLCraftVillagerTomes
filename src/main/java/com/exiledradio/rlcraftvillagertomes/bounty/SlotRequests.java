@@ -39,6 +39,11 @@ public final class SlotRequests {
      *
      * <p>With locking off this is simply the configured maximum, so turning the setting off
      * restores the old behaviour for every villager at once rather than only for new ones.
+     *
+     * <p>This is also what the chance formulas count as the villager's experience: slots it
+     * has opened, not books it holds. Paying for a slot is the investment, so that is what
+     * should make the villager better - otherwise a villager you had just bought a slot on
+     * would be no more capable than one you had not.
      */
     public static int unlockedSlots(ITomeKnowledge tomes) {
         return ModConfig.LOCK_SLOTS
@@ -49,17 +54,6 @@ public final class SlotRequests {
     /** Unlocked slots not yet holding a book. */
     public static int openSlots(ITomeKnowledge tomes) {
         return Math.max(0, unlockedSlots(tomes) - tomes.count());
-    }
-
-    /**
-     * What the chance formula counts as this villager's experience.
-     *
-     * <p>Slots it has opened, not books it holds. Paying for a slot is the investment, so
-     * that is what should make the villager better - otherwise a villager you had just
-     * bought a slot on would be no more capable than one you had not.
-     */
-    public static int chanceSlots(ITomeKnowledge tomes) {
-        return Math.max(0, unlockedSlots(tomes) - 1);
     }
 
     /**

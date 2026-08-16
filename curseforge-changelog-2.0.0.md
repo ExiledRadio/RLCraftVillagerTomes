@@ -16,7 +16,7 @@ Librarians now start with nothing. Each one rolls its own list of items and want
 
 - **30%** on a librarian's first slot, **+10 per slot** it has opened.
 - **Catalysts** are banked into a villager beforehand: glowing powder **+1%**, ingot **+5%**, gem **+30%**. Those are its own crafting costs — an ingot is four powder, a gem is four ingots plus four powder plus a diamond block.
-- The ceiling starts at **80%** and rises **+5 per slot**, so a developed villager can be pushed past it.
+- The ceiling is **80%** on a one-slot librarian, **+5 per slot** after that, so a fully opened one can be prepared all the way to **100%**.
 - Every attempt **asks before it commits** and reports the odds while asking. A brief debounce means a double-click cannot answer the question for you.
 
 ## Failure costs, and then pays back
@@ -30,6 +30,8 @@ In return you get a floor: **+5% per level of the book that burned**, so a Sharp
 Sneak-click a librarian with a **book and quill** and it becomes a quest log. Sneak-click with the log to write that villager into it — a name you pick, its coordinates, and everything it still needs.
 
 Naming also sets the villager's name tag. Entries update as you deliver and cross themselves off when the slot is paid. Ten villagers per book.
+
+**Sneak-click with the log aimed at nothing** and the whole roster prints to chat, each line with its own **[Remove]** button. A villager that died, or that you are never walking back to, would otherwise hold its slot in the book permanently. `/villagertomes log` is the same list for anyone whose client opens the book anyway.
 
 It is a vanilla written book rather than a custom item, which is the only reason **the mod still works on a completely unmodded client**.
 

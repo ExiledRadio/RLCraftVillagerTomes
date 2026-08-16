@@ -64,7 +64,7 @@ public class CommandVillagerTomes extends CommandBase {
 
     @Override
     public String getUsage(ICommandSender sender) {
-        return "/villagertomes <list|tiers|name|unlock|bank|pity|reroll|teach|forget|clear> [args]";
+        return "/villagertomes <list|tiers|name|log|unlock|bank|pity|reroll|teach|forget|clear> [args]";
     }
 
     /** Zero so that unprivileged players can reach {@code list}. See {@link #checkAdmin}. */
@@ -94,6 +94,8 @@ public class CommandVillagerTomes extends CommandBase {
             executeName(sender, args);
         } else if ("cancel".equals(subCommand)) {
             executeCancel(sender);
+        } else if ("log".equals(subCommand)) {
+            executeLog(sender);
         } else if ("unlog".equals(subCommand)) {
             executeUnlog(sender, args);
         } else if ("unlock".equals(subCommand)) {
@@ -255,6 +257,24 @@ public class CommandVillagerTomes extends CommandBase {
     }
 
     /** Backs the [Remove] button on a log entry. Takes the villager id the button embeds. */
+    /**
+     * The same roster the sneak-click gives, for anyone whose client opens the book anyway.
+     *
+     * <p>The gesture cancels the screen client-side, which only works on a client that has
+     * the mod. This is the path that always works.
+     */
+    private void executeLog(ICommandSender sender) throws CommandException {
+        if (!(sender instanceof EntityPlayer)) {
+            throw new CommandException("Only a player carries a quest log.");
+        }
+        EntityPlayer player = (EntityPlayer) sender;
+        ItemStack log = QuestBinding.findLog(player);
+        if (log.isEmpty()) {
+            throw new CommandException("You are not carrying a quest log.");
+        }
+        QuestBinding.listEntries(player, log);
+    }
+
     private void executeUnlog(ICommandSender sender, String[] args) throws CommandException {
         if (!(sender instanceof EntityPlayer)) {
             throw new CommandException("Only a player carries a quest log.");
@@ -297,7 +317,7 @@ public class CommandVillagerTomes extends CommandBase {
         }
         reply(sender, TextFormatting.GREEN + "Unlocked " + target + " slot(s). "
                 + TextFormatting.GRAY + SlotRequests.openSlots(tomes) + " free, chance now "
-                + trim(ModConfig.getTotalChance(SlotRequests.chanceSlots(tomes), 0.0F,
+                + trim(ModConfig.getTotalChance(SlotRequests.unlockedSlots(tomes), 0.0F,
                         tomes.getBankedChance())) + "%.");
     }
 
@@ -322,7 +342,7 @@ public class CommandVillagerTomes extends CommandBase {
         tomes.addBankedChance(Math.max(0.0F, percent));
         reply(sender, TextFormatting.GREEN + "Banked set to " + trim(tomes.getBankedChance())
                 + "%. " + TextFormatting.GRAY + "Chance now "
-                + trim(ModConfig.getTotalChance(SlotRequests.chanceSlots(tomes), 0.0F,
+                + trim(ModConfig.getTotalChance(SlotRequests.unlockedSlots(tomes), 0.0F,
                         tomes.getBankedChance())) + "%.");
     }
 
@@ -348,7 +368,7 @@ public class CommandVillagerTomes extends CommandBase {
         tomes.addPityBonus(id, Math.max(0.0F, percent));
         reply(sender, TextFormatting.GREEN + String.valueOf(id) + " pity set to "
                 + trim(tomes.getPityBonus(id)) + "%. " + TextFormatting.GRAY + "That book is now "
-                + trim(ModConfig.getTotalChance(SlotRequests.chanceSlots(tomes),
+                + trim(ModConfig.getTotalChance(SlotRequests.unlockedSlots(tomes),
                         tomes.getPityBonus(id), tomes.getBankedChance())) + "%.");
     }
 
@@ -524,8 +544,8 @@ public class CommandVillagerTomes extends CommandBase {
     public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
                                           String[] args, net.minecraft.util.math.BlockPos pos) {
         if (args.length == 1) {
-            return getListOfStringsMatchingLastWord(args, "list", "tiers", "name", "cancel", "unlock",
-                    "bank", "pity", "reroll", "teach", "forget", "clear");
+            return getListOfStringsMatchingLastWord(args, "list", "tiers", "name", "cancel", "log",
+                    "unlock", "bank", "pity", "reroll", "teach", "forget", "clear");
         }
         if (args.length == 2 && ("teach".equals(args[0]) || "forget".equals(args[0])
                 || "pity".equals(args[0]))) {
