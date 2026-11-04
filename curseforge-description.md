@@ -206,7 +206,7 @@ Keeping track of what five librarians each want is a chore. The quest log does i
 | **catalysts** | Which items raise the odds, and by how much                           |
 | **feedback**  | Messages, sounds, particles                                           |
 
-**152 bounty items** ship configured, from vanilla, Ice and Fire, Lycanites, Defiled Lands, Trinkets and Baubles and others. Items from mods you don't have are skipped, so the list is safe on any 1.12.2 pack.
+**261 bounty items** ship configured, from vanilla, Ice and Fire, Lycanites, Defiled Lands, Rustic, Parasites, Trinkets and Baubles and others. Items from mods you don't have are skipped, so the list is safe on any 1.12.2 pack.
 
 Every setting is explained in the file itself.
 

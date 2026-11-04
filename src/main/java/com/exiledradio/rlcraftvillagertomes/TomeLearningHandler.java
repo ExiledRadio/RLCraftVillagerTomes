@@ -29,6 +29,7 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
@@ -57,7 +58,14 @@ public final class TomeLearningHandler {
     private TomeLearningHandler() {
     }
 
-    @SubscribeEvent
+    // HIGHEST so a bounty can be handed over with an item the player is not skilled enough to
+    // USE. Reskillable (RLCraft's level locks) cancels EntityInteract at HIGH whenever the held
+    // item is locked, and an ordinary-priority handler never sees a cancelled event - so a
+    // villager asking for a diamond shovel could not be given one without Gathering 16.
+    // Reskillable returns early on an event that is already cancelled, so claiming the click
+    // first is enough. Only our own gestures are cancelled here; every other click falls
+    // through untouched and Reskillable still enforces its lock on it.
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
         // Every decision is the server's. The client fires this event too, and letting it
         // run there would consume the book twice over in single player.
@@ -508,8 +516,12 @@ public final class TomeLearningHandler {
      *
      * <p>What is left after that is a sneak-click on nothing, which is where the quest log
      * roster lives.
+     *
+     * <p>HIGHEST for the same reason as {@link #onEntityInteract}: the follow-up use of a
+     * skill-locked item is cancelled by Reskillable at HIGH, which would print its "you
+     * cannot use this" line straight after the villager accepted the item.
      */
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
         EntityPlayer player = event.getEntityPlayer();
         boolean server = !event.getWorld().isRemote;
