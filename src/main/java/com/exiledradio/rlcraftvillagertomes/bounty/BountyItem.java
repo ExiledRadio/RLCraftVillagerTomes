@@ -71,6 +71,12 @@ public final class BountyItem {
         if (actual == null || !actual.equals(itemName)) {
             return false;
         }
+        // On a tool or armour piece metadata is wear, not a variant, so a config line that
+        // pins one (minecraft:iron_axe:0) must not turn into "only a pristine axe will do".
+        // A used pickaxe is still a pickaxe.
+        if (stack.getItem().isDamageable()) {
+            return true;
+        }
         return meta == ANY_META || meta == stack.getMetadata();
     }
 }
