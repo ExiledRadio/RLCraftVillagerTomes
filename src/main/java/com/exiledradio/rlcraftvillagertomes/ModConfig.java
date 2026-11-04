@@ -215,15 +215,15 @@ public class ModConfig {
     //
     // The other three are deliberately defined but empty. A band with nothing in it costs
     // nothing, and leaving the ladder complete means a pack author adding their own catalysts
-    // has somewhere to put them without first working out what the gaps between 1, 5 and 30
+    // has somewhere to put them without first working out what the gaps between 4, 20 and 120
     // ought to be.
     public static String[] CATALYST_TIERS = {
-            "common=1.0",
-            "uncommon=2.5",
-            "rare=5.0",
-            "epic=10.0",
-            "legendary=15.0",
-            "mythic=30.0",
+            "common=4.0",
+            "uncommon=10.0",
+            "rare=20.0",
+            "epic=40.0",
+            "legendary=60.0",
+            "mythic=120.0",
     };
     public static String[] CATALYST_ITEMS = {
             "xat:glowing_powder=common",
@@ -1374,8 +1374,8 @@ public class ModConfig {
                         + "  percent  percentage points one of these adds to a teaching attempt.\n"
                         + "  min-max  how many a villager asks for when it wants one of these.\n"
                         + "\n"
-                        + "So common=1.0,8-24 means a common item is worth +1% and gets asked for in\n"
-                        + "batches of 8 to 24 - the emerald x18 end of a request. legendary=15.0,1-2\n"
+                        + "So common=4.0,8-24 means a common item is worth +4% and gets asked for in\n"
+                        + "batches of 8 to 24 - the emerald x18 end of a request. legendary=60.0,1-2\n"
                         + "is the single-item end.\n"
                         + "\n"
                         + "Names are yours to choose; nothing is hard-coded. A malformed line is\n"

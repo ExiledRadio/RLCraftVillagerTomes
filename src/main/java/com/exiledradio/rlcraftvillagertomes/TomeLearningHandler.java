@@ -248,16 +248,24 @@ public final class TomeLearningHandler {
             return;
         }
         if (verdict == TeachConfirmations.Verdict.ASK) {
-            float odds = ModConfig.getTotalChance(SlotRequests.unlockedSlots(tomes),
-                    tomes.getPityBonus(gambledOn), tomes.getBankedChance());
             ITextComponent ask = new TextComponentString(PREFIX + TextFormatting.YELLOW
                     + "Give ");
             ask.appendSibling(describe(top.getKey(), top.getValue().intValue()));
-            ask.appendSibling(new TextComponentString(TextFormatting.YELLOW + " to this villager? "
-                    + TextFormatting.WHITE + percent(odds) + TextFormatting.YELLOW + " chance."));
+            // With the gamble switched off every attempt lands, so quoting odds - or warning
+            // that the book can be lost - would describe a mechanic that is not running.
+            if (ModConfig.ENABLE_CHANCE) {
+                float odds = ModConfig.getTotalChance(SlotRequests.unlockedSlots(tomes),
+                        tomes.getPityBonus(gambledOn), tomes.getBankedChance());
+                ask.appendSibling(new TextComponentString(TextFormatting.YELLOW + " to this villager? "
+                        + TextFormatting.WHITE + percent(odds) + TextFormatting.YELLOW + " chance."));
+            } else {
+                ask.appendSibling(new TextComponentString(TextFormatting.YELLOW + " to this villager?"));
+            }
             player.sendMessage(ask);
             player.sendMessage(new TextComponentString(TextFormatting.GRAY
-                    + "  Sneak-click again to confirm. The book is destroyed if it fails."));
+                    + "  Sneak-click again to confirm."
+                    + (ModConfig.ENABLE_CHANCE && ModConfig.CONSUME_BOOK_ON_FAILURE
+                            ? " The book is destroyed if it fails." : "")));
             return;
         }
 

@@ -1,11 +1,20 @@
 <!--
-Two images only, both gameplay. Config screenshots are deliberately not in here -
-a wall of settings tables breaks the read and nobody installs a mod because they saw
-its config screen. They are still on the project's Images tab.
+Structure: pitch, then the whole mod in four steps, then one section per step in the
+order a player meets them, then reference material (config, commands) at the bottom.
+One idea per section. Numbers live in tables, not sentences.
 
-USED:
-  learned message   https://media.forgecdn.net/attachments/1852/310/villagertomeslearnedmessage-png.png
-  upgrade message   https://media.forgecdn.net/attachments/1852/314/villagetomesupgrademessage-png.png
+IMAGES USED:
+  learned message      https://media.forgecdn.net/attachments/1852/310/villagertomeslearnedmessage-png.png
+  bounty list, short   https://media.forgecdn.net/attachments/1874/998/bountylist2-png.png
+  bounty list, long    https://media.forgecdn.net/attachments/1874/988/bountylist-png.png
+  banked catalysts     https://media.forgecdn.net/attachments/1874/978/banked-png.png
+  success              https://media.forgecdn.net/attachments/1875/9/success-png.png
+  failed               https://media.forgecdn.net/attachments/1875/22/failed-png.png
+  failure bonus        https://media.forgecdn.net/attachments/1875/23/successbonus-png.png
+  upgrade message      https://media.forgecdn.net/attachments/1852/314/villagetomesupgrademessage-png.png
+  quest log convert    https://media.forgecdn.net/attachments/description/1644374/description_3b41a2e8-954d-4010-a37a-88f066a5fceb.png
+  villager naming      https://media.forgecdn.net/attachments/1875/29/villagernaming-png.png
+  quest book           https://media.forgecdn.net/attachments/1875/27/questbook-png.png
 
 UPLOADED BUT UNUSED, kept here so the URLs are not lost:
   config category      https://media.forgecdn.net/attachments/1852/311/villagetomesconfigcategory-png.png
@@ -17,194 +26,232 @@ UPLOADED BUT UNUSED, kept here so the URLs are not lost:
 
 # RLCraft Villager Tomes
 
-**Teach a librarian the enchanted books you find, and it sells them back to you forever.**
+**Teach a librarian an enchanted book, and it sells that book to you forever.**
 
-You found a Mending book. You used it once, on one tool, and that was the end of it. Every duplicate after that is anvil fodder.
+You found a Mending book. You used it once, on one tool, and that was the end of it.
 
-Hand it to a librarian instead and it becomes a trade you can go back to — but you have to earn the room, and the book might not take.
-
-Works out of the box. No dependencies, and clients do not need it installed.
+Hand it to a librarian instead and it becomes a trade you can come back to. You have to earn the slot first, and the book might not take.
 
 ![A villager learning a book](https://media.forgecdn.net/attachments/1852/310/villagertomeslearnedmessage-png.png)
 
----
+**Server-side only.** No dependencies, and players do not need the mod installed to join.
 
-## The loop
+> 💬 **[Join the Discord](https://discord.gg/kxQvMDJBTN)** for bug reports, suggestions and release pings. It's where I'm most responsive.
 
-| | |
-|---|---|
-| **Pay for its slots** | Every librarian wants a list of items before it will hold a book. Deliver it — then buy the next slot, and the next, for as long as you want its odds higher. |
-| **Stack the odds** | Feed it glowing powder, ingots or gems. Each one raises its chance. |
-| **Check where you stand** | Sneak-click it empty-handed for the current odds and what it still wants. |
-| **Commit the book** | Sneak-click with the book. It asks once, then rolls. |
+***
 
-Sneaking is the trigger throughout, for a reason specific to 1.12: vanilla refuses to open a villager's trade screen while you are sneaking. That makes it a gesture that would otherwise do nothing, and leaves the plain right-click free for trading — even with a book in hand. Nothing about ordinary villager behaviour changes unless you are deliberately sneaking at one.
+## How it works
 
----
+1.  **Unlock a slot.** The librarian asks for a list of items. Bring them.
+2.  **Raise the odds.** Feed it glowing powder, ingots or gems.
+3.  **Teach the book.** It rolls. On a success, the librarian sells that enchantment from then on.
+4.  **Buy it back, as often as you like.** Ten emeralds per enchantment level, plus a plain book.
 
-## Slots are bought, not given
+That's the whole mod. Everything below is the detail on each step.
 
-A librarian starts with nothing and rolls its own demand for each slot it opens.
+### One control for everything
 
-```
-Needed for slot 3:
-  Blaze Rod 0/6
-  Block of Coal 0/3
-  Glowing Ingot 0/2
-  Diamond 0/4
-```
+**Sneak + right-click the librarian.** What happens depends on what you're holding:
 
-Requests get longer and richer the deeper you go — two items for the first slot, six by the fifth, and the bands they draw from climb with them. An opening request is material you already have stacks of. A fifth can ask for a dragon heart.
+| Holding            | What it does                                       |
+| ------------------ | -------------------------------------------------- |
+| Nothing            | Shows its current odds and what it still wants     |
+| An item it asked for | Delivers it toward the next slot                 |
+| A glowing material | Banks it to raise the odds                         |
+| An enchanted book  | Offers the book. It asks you to confirm, then rolls |
+| A book and quill   | Turns it into a quest log (see below)              |
 
-**A request is never re-rolled.** If a villager wants something you cannot get, the answer is a different villager. That is what makes the ones you have already paid into worth protecting.
+A normal right-click still opens the trade screen, exactly as in vanilla.
 
-**Every slot is for sale up front.** A librarian asks for its next bounty whether or not the slots it already has are empty, so you can buy all five before handing it a single book. That is the strategy the odds are built around — see below.
+***
 
-Five slots per librarian by default, and every one of them costs.
+## Step 1: Unlock a slot
 
----
+A librarian starts with no slots. Each slot holds one enchantment, and each one has to be paid for.
 
-## Teaching is a roll
+Sneak-click it empty-handed and it tells you what it wants:
 
-A librarian on its first slot accepts a book **30%** of the time. Every slot it has opened adds **+10**, so one four slots deep sits at 60 before you have done anything.
+![A short request](https://media.forgecdn.net/attachments/1874/998/bountylist2-png.png)
 
-**Catalysts** are banked into a villager beforehand and raise it further:
+Later slots ask for more, and for rarer things:
 
-| | |
-|---|---|
-| Glowing Powder | +1% |
-| Glowing Ingot | +5% |
-| Glowing Gem | +30% |
+![A long request](https://media.forgecdn.net/attachments/1874/988/bountylist-png.png)
 
-Those numbers come straight from what each costs to craft — an ingot is four powder, a gem is four ingots plus four powder plus a diamond block. A single gem takes a fresh villager from its base to its ceiling.
+Three rules:
 
-The ceiling is **80%** on a one-slot librarian and rises **+5 per slot unlocked**, reaching **100% on a fully opened one**. So preparation never quite guarantees the result on a young villager, and does on a villager you have paid into five times — which is the reward for committing to one rather than spreading books across a dozen.
+*   **Five slots per librarian.**
+*   **A request never re-rolls.** If a librarian wants something you can't get, find a different librarian.
+*   **You can buy slots ahead.** A librarian asks for its next slot even while earlier ones are empty, so you can unlock all five before risking a single book.
 
-Since slots are all for sale from the start, the safe play is to buy a librarian out to five before you ever risk a book on it. Five slots is 70% base; one glowing gem on top of that is the only certainty in the mod. Getting there costs four bounties and no books at all.
+***
 
-Every attempt asks before it commits, and reports the odds while it asks.
+## Step 2: Raise the odds
 
----
+Teaching is a dice roll. The more slots a librarian has unlocked, the better its odds:
 
-## Failure costs you
+| Slots unlocked | Starting chance | Highest you can push it |
+| -------------- | --------------- | ----------------------- |
+| 1              | 30%             | 80%                     |
+| 2              | 40%             | 85%                     |
+| 3              | 50%             | 90%                     |
+| 4              | 60%             | 95%                     |
+| 5              | 70%             | **100%**                |
 
-A failed roll **destroys the book and everything you had banked**. That is what gives the gamble teeth.
+To get from the starting chance toward the highest, bank **catalysts**:
 
-What you get back is a floor. Each failure adds **+5% per level of the book that burned** — so losing a Sharpness V is worth 25, and a Sharpness I is worth 5 — tracked per villager *and* per enchantment. Failing Mending on one librarian makes Mending easier on that librarian only.
+| Catalyst       | Adds |
+| -------------- | ---- |
+| Glowing Powder | +4%  |
+| Glowing Ingot  | +20% |
+| Glowing Gem    | +120% (fills any villager to its ceiling) |
 
-That bonus stacks **on top of the ceiling**, not under it. Enough bad luck will carry a book past what any amount of preparation could buy.
+![Banked catalysts](https://media.forgecdn.net/attachments/1874/978/banked-png.png)
 
-![Levelling a trade up](https://media.forgecdn.net/attachments/1852/314/villagetomesupgrademessage-png.png)
+A librarian that's already at its highest hands the catalyst back, so nothing is wasted.
 
----
+> **The safe play:** unlock all five slots first, then bank one Glowing Gem. It takes any librarian straight to its ceiling, and at five slots that ceiling is 100% - a guaranteed success. It's the only sure thing in the mod.
+
+***
+
+## Step 3: Teach the book
+
+Sneak-click with the enchanted book. The librarian tells you the odds and waits. Sneak-click again to commit.
+
+**If it works,** the librarian sells that enchantment at that level from now on.
+
+![A successful attempt](https://media.forgecdn.net/attachments/1875/9/success-png.png)
+
+**If it fails, you lose the book and every catalyst you banked.**
+
+![A failed attempt](https://media.forgecdn.net/attachments/1875/22/failed-png.png)
+
+### Bad luck is paid back
+
+Each failure makes the next attempt easier: **+5% for every level of the book you lost.** Lose a Sharpness V and you're owed 25%. Lose a Sharpness I and you're owed 5%.
+
+*   The bonus is for **that enchantment on that librarian** only.
+*   It goes **on top of** the highest chance in the table above, so enough failures reach 100% on any librarian.
+*   It resets once that enchantment succeeds.
+
+![The failure bonus](https://media.forgecdn.net/attachments/1875/23/successbonus-png.png)
+
+***
+
+## Step 4: Buy it back
+
+A taught trade costs **10 emeralds per level, plus one plain book**. Mending is 10, Unbreaking III is 30, Sharpness V is 50.
+
+Taught trades never lock or run out of stock.
+
+***
 
 ## Levelling a trade up
 
-Bring a book **above** what the villager already sells and the trade becomes that level.
+Bring a book **higher** than what the librarian sells, and the trade becomes that level. It's a normal teaching attempt, with the same odds and the same risk.
 
-So pushing a trade from Unbreaking II to III means buying two Unbreaking II from it, combining them at an anvil yourself, and bringing the III back. The anvil stays in the loop — a villager will not level itself up on copies of what it already sells.
+To go from Unbreaking II to III: buy two Unbreaking II from the librarian, combine them at an anvil, and bring the III back.
 
-A **multi-enchantment book is attempted one line at a time.** Only the top enchantment is gambled on, and only it is peeled off the book. A book of Unbreaking III, Mending and Efficiency V is three separate decisions, and either result leaves you holding the other two.
+![Levelling a trade up](https://media.forgecdn.net/attachments/1852/314/villagetomesupgrademessage-png.png)
 
-A book *below* what it sells is refused and handed straight back. So is a book for an enchantment the librarian already sells naturally — slots are too expensive to spend one taking over a trade it could already do.
+**What gets refused.** The book is handed straight back in both cases:
 
----
+*   A book at or below the level it already sells.
+*   An enchantment the librarian already sells naturally.
+
+**Books with several enchantments** are handled one enchantment at a time. Only the top one is rolled for, and only that one is removed from the book. Win or lose, you keep the rest.
+
+***
 
 ## The quest log
 
-Sneak-click a librarian holding a **book and quill** and it becomes a quest log. Sneak-click with the log and that villager gets written into it: a name you choose, where it lives, and everything it still needs.
+Keeping track of what five librarians each want is a chore. The quest log does it for you.
 
-```
-Gareth
-x412 y68 z-1190
+**Make one:** sneak-click a librarian while holding a **book and quill**.
 
-Slot 3 needs:
-- 6 Blaze Rod
-- 3 Block of Coal
-- 2 Glowing Ingot
-```
+![Making a quest log](https://media.forgecdn.net/attachments/description/1644374/description_3b41a2e8-954d-4010-a37a-88f066a5fceb.png)
 
-Naming a villager also sets its name tag, so the book and the world agree. Entries update as you deliver and cross themselves off when the slot is paid for. Ten villagers per book.
+**Add a librarian:** sneak-click it with the log. You give it a name, and the log records where it lives and what it still needs. The name also shows on the villager as a name tag.
 
-Sneak-click with the log while pointing at nothing and it lists every villager in chat with a **[Remove]** button on each, so an entry for a librarian that died or that you will never walk back to is one click to clear rather than a slot lost forever. `/villagertomes log` does the same thing.
+![Naming a villager](https://media.forgecdn.net/attachments/1875/29/villagernaming-png.png)
 
-It is a **vanilla written book**, not a custom item — which is the only reason this mod still works on a completely unmodded client.
+**It keeps itself current.** Entries update as you deliver items and cross themselves off when the slot is paid for. One log tracks ten librarians.
 
----
+![The quest log](https://media.forgecdn.net/attachments/1875/27/questbook-png.png)
 
-## Modded enchantments work
+**Remove a librarian:** sneak-click with the log while looking at nothing, or run `/villagertomes log`. Each entry gets a **\[Remove\]** button in chat.
 
-Enchantments are read from the registry at runtime, so anything any mod adds is teachable with no patch and no compatibility release. In RLCraft that means the whole SoManyEnchantments set behaves exactly like a vanilla enchantment here.
+***
 
-Treasure enchantments including Mending are allowed by default — being able to buy more Mending after finding one is the single biggest thing this does for a long run. Curses are allowed too; a looted curse book is still a book somebody looted. Both have switches.
+## Good to know
 
----
+*   **Curing a zombie villager wipes its tomes.** The cured villager is a brand new one. Protect your good librarians.
+*   **Librarians only, by default.** Cartographers count too, since they share the profession. `ALLOWED_PROFESSIONS` opens it to others.
+*   **Modded enchantments work.** Anything any mod adds can be taught, including all of SoManyEnchantments. Treasure enchantments and curses are allowed by default, and both have a switch.
+*   **You can turn the hard parts off.** `ENABLE_CHANCE = false` makes every book succeed. `LOCK_SLOTS = false` gives every librarian all its slots for free.
 
-## Trades that never lock
-
-1.12 has a real design flaw with villagers. A villager only restocks as a *side effect of being traded with* — `EntityVillager.useRecipe` is the only place in the game that schedules a refresh. Exhaust every trade and there is nothing left to use, nothing schedules the refresh, and that villager is bricked permanently.
-
-**`NEVER_LOCK_TAUGHT_TRADES`** is on by default and keeps this mod's trades usable forever. **`NEVER_LOCK_ANY_TRADE`** is off by default and extends that to every trade on any villager you click, which fixes the flaw outright at the cost of uncapping emerald farming.
-
----
+***
 
 ## Config
 
-Six categories in `config/rlcraftvillagertomes.cfg`, or the in-game config screen. All read live; nothing needs a restart.
+`config/rlcraftvillagertomes.cfg`, or the in-game config screen. Changes apply immediately, with no restart.
 
-- **learning** — who can be taught, the tome cap, enchantment whitelist and blacklist, treasure and curse switches, level ceilings
-- **slots** — whether slots lock at all, how requests grow, the per-slot band weights, quest log size
-- **chance** — base, ceiling, per-slot growth, pity, the confirmation prompt, what a failure destroys
-- **bounties** — the item list villagers demand from, with per-band and per-item quantities
-- **catalysts** — which items raise the odds and by how much
-- **pricing** — the emerald formula, the extra input item, trade stock, experience
-- **upgrading** and **feedback** — levelling rules, messages, sounds, particles
+| Category      | What's in it                                                          |
+| ------------- | --------------------------------------------------------------------- |
+| **learning**  | Who can be taught, slots per villager, enchantment whitelist and blacklist |
+| **slots**     | Whether slots need unlocking, how long requests get, quest log size   |
+| **chance**    | Every number from Steps 2 and 3, and what a failure destroys          |
+| **upgrading** | How trades level up                                                   |
+| **pricing**   | Emerald cost, the extra book, trade stock                             |
+| **bounties**  | The items librarians can ask for, and how many                        |
+| **catalysts** | Which items raise the odds, and by how much                           |
+| **feedback**  | Messages, sounds, particles                                           |
 
-**152 bounty items** ship configured, spanning vanilla, Ice and Fire, Lycanites, Defiled Lands, Trinkets and Baubles and others. Items no loaded mod registers are skipped silently, so the list is safe on any 1.12.2 pack — it simply asks for less.
+**152 bounty items** ship configured, from vanilla, Ice and Fire, Lycanites, Defiled Lands, Trinkets and Baubles and others. Items from mods you don't have are skipped, so the list is safe on any 1.12.2 pack.
 
-Every setting is documented in the file itself, including what it is *for*, not just what it does.
+Every setting is explained in the file itself.
 
----
+***
 
 ## Commands
 
-`/villagertomes` — aliases `/tomes`, `/vt` — works on the villager you are looking at.
+`/villagertomes` (or `/tomes`, `/vt`) acts on the villager you're looking at.
 
-| | |
-|---|---|
-| `list` | What it knows and what each trade costs. Everyone. |
-| `tiers` | The parsed item lists, and what the item in your hand counts as. Everyone. |
-| `unlock [n]` | Open slots without paying. Op. |
-| `bank <percent>` | Set banked chance outright. Op. |
-| `pity <ench> <percent>` | Set what a villager owes on one book. Op. |
-| `reroll` | Throw the current demand away and roll another. Op. |
-| `teach` / `forget` / `clear` | Edit its tomes directly. Op. |
+**Everyone**
 
----
+| Command | What it does                                              |
+| ------- | --------------------------------------------------------- |
+| `list`  | What it sells and what each trade costs                   |
+| `tiers` | The bounty and catalyst lists, and what your held item counts as |
+| `log`   | Lists your quest log entries with \[Remove\] buttons      |
 
-## Things to know
+**Ops only**
 
-**Curing a zombie villager does not preserve tomes.** A zombie villager is a different entity class, so the cured one is brand new with nothing learned. Protect your good librarians.
+| Command                      | What it does                              |
+| ---------------------------- | ----------------------------------------- |
+| `unlock [n]`                 | Opens slots without paying                |
+| `bank <percent>`             | Sets the banked chance                    |
+| `pity <ench> <percent>`      | Sets the failure bonus for one enchantment |
+| `reroll`                     | Replaces the current request with a new one |
+| `teach` / `forget` / `clear` | Edits its tomes directly                  |
 
-**Librarians only, by default.** Books are a librarian's business, and the grind this removes is rerolling one for the enchantment you want — not finding one in the first place. `ALLOWED_PROFESSIONS` opens it up. Note that cartographers share the librarian profession and are included.
+***
 
-**All of it can be switched off.** `ENABLE_CHANCE` restores guaranteed teaching and `LOCK_SLOTS` gives every villager its full allowance immediately — including ones already in your world. Between them you get the 1.x mod back.
+## Requirements & install
 
----
+*   Minecraft 1.12.2, Forge 14.23.5.2847 or newer
+*   No dependencies
+*   Server-side only. Clients don't need it.
 
-## Requirements
+Drop the jar in your `mods` folder. **Delete any older version first**, or the game crashes on startup with a duplicate mod id.
 
-- Minecraft 1.12.2, Forge 14.23.5.2847 or newer
-- No dependencies
+***
 
-Everything happens server-side. Clients do not need the mod installed, and there are no custom packets.
+## Pairs well with
 
-## Install
+**[RLCraft Enchantment Recipes](https://www.curseforge.com/minecraft/mc-mods/rlcraft-enchantment-recipes)**, my other mod. Craft a max-level book from RLCraft materials there, then teach it to a librarian here so you never have to craft it twice.
 
-Download the jar and drop it in your `mods` folder. **Delete any older version first** — two copies will crash on startup with a duplicate mod id.
-
----
+***
 
 Unofficial addon, not affiliated with the RLCraft or RLCraft Dregora teams. Licensed MIT.
 
-Source: https://github.com/ExiledRadio/RLCraftVillagerTomes
+Source: [https://github.com/ExiledRadio/RLCraftVillagerTomes](https://github.com/ExiledRadio/RLCraftVillagerTomes)

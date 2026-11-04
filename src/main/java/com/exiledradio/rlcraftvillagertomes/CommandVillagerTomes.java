@@ -317,9 +317,12 @@ public class CommandVillagerTomes extends CommandBase {
         // reason for one not to exist.
         tomes.setRequest(null);
         reply(sender, TextFormatting.GREEN + "Unlocked " + target + " slot(s). "
-                + TextFormatting.GRAY + SlotRequests.openSlots(tomes) + " free, chance now "
-                + trim(ModConfig.getTotalChance(SlotRequests.unlockedSlots(tomes), 0.0F,
-                        tomes.getBankedChance())) + "%.");
+                + TextFormatting.GRAY + SlotRequests.openSlots(tomes) + " free"
+                + (ModConfig.ENABLE_CHANCE
+                        ? ", chance now " + trim(ModConfig.getTotalChance(
+                                SlotRequests.unlockedSlots(tomes), 0.0F,
+                                tomes.getBankedChance())) + "%."
+                        : "."));
     }
 
     /** Sets the banked catalyst percentage outright, instead of feeding items one at a time. */
