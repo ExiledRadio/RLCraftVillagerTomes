@@ -78,11 +78,12 @@ with, since `EntityVillager.useRecipe` is the sole place that schedules a refres
 every trade on a villager and there is no trade left to use, nothing schedules the refresh, and
 that villager is bricked permanently.
 
-`NEVER_LOCK_TAUGHT_TRADES` (**on** by default) keeps this mod's own trades permanently usable by
-holding their use limit ahead of their use count. `NEVER_LOCK_ANY_TRADE` (off by default) does
+`NEVER_LOCK_TAUGHT_TRADES` (off by default since 2.2.0) keeps this mod's own trades permanently
+usable by holding their use limit ahead of their use count. Off, they lock after
+`MAX_TRADE_USES` like any other trade. `NEVER_LOCK_ANY_TRADE` (off by default) does
 the same for *every* trade on any villager you click — the blunt fix for the flaw above, off
 because it turns any emerald trade into an uncapped tap.
-- **feedback** — chat messages, villager sounds, particles.
+- **feedback** — messages (action bar and bounty scroll, not chat), villager sounds, particles.
 
 Every setting is documented in the file itself, including what it is *for*, not just what it
 does. Changes apply on reload; existing villagers pick up new prices the next time somebody
@@ -105,13 +106,13 @@ tome cap.
 
 ## Notes and limitations
 
-- **Curing a zombie villager does not preserve tomes.** A zombie villager is a different entity
-  class, so the cured villager is a brand new one with nothing learned. Protect your good
-  villagers.
+- **Curing keeps a villager's tomes.** 1.12 makes a brand new villager on a cure, so the mod
+  carries its tomes, slots, bounty and Villager Ward across on the zombie's saved data.
 - **A villager will not learn what it already sells.** If a librarian naturally rolled an
   Unbreaking trade, an Unbreaking book is refused and handed back — buy it from them instead.
   Slots are too expensive to spend one taking over a trade the villager could already do.
-- **Server-side.** Clients do not need the mod; `acceptableRemoteVersions` is `*`.
+- **Client and server.** Since 2.2.0 the Villager Ledger and Ledger Lectern are a real item
+  and block with their own screen, so the mod is needed on both sides.
 
 ## Building
 

@@ -1,0 +1,69 @@
+{
+  "item.ledger.open": {
+    "category": "player",
+    "subtitle": "subtitles.rlcraftvillagertomes.ledger.open",
+    "sounds": [
+      {
+        "name": "rlcraftvillagertomes:ledger/open_flip1",
+        "volume": 2.0,
+        "stream": false
+      },
+      {
+        "name": "rlcraftvillagertomes:ledger/open_flip2",
+        "volume": 2.0,
+        "stream": false
+      },
+      {
+        "name": "rlcraftvillagertomes:ledger/open_flip3",
+        "volume": 2.0,
+        "stream": false
+      }
+    ]
+  },
+  "block.ledger_lectern.put": {
+    "category": "block",
+    "subtitle": "subtitles.rlcraftvillagertomes.ledger_lectern.put",
+    "sounds": [
+      {
+        "name": "rlcraftvillagertomes:ledger/close_put1",
+        "stream": false
+      },
+      {
+        "name": "rlcraftvillagertomes:ledger/close_put2",
+        "stream": false
+      }
+    ]
+  },
+  "ui.bounty_scroll.open": {
+    "category": "player",
+    "subtitle": "subtitles.rlcraftvillagertomes.bounty_scroll.open",
+    "sounds": [
+      {
+        "name": "rlcraftvillagertomes:scroll/unroll1",
+        "stream": false
+      },
+      {
+        "name": "rlcraftvillagertomes:scroll/unroll2",
+        "stream": false
+      },
+      {
+        "name": "rlcraftvillagertomes:scroll/unroll3",
+        "stream": false
+      }
+    ]
+  },
+  "ui.bounty_scroll.close": {
+    "category": "player",
+    "subtitle": "subtitles.rlcraftvillagertomes.bounty_scroll.close",
+    "sounds": [
+      {
+        "name": "rlcraftvillagertomes:scroll/roll1",
+        "stream": false
+      },
+      {
+        "name": "rlcraftvillagertomes:scroll/roll2",
+        "stream": false
+      }
+    ]
+  }
+}

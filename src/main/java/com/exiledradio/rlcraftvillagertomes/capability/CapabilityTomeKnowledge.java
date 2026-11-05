@@ -53,6 +53,7 @@ public final class CapabilityTomeKnowledge {
     private static final String TAG_FAILURES = "Fails";
     private static final String TAG_OWED = "n";
     private static final String TAG_SLOTS = "Slots";
+    private static final String TAG_WARD = "Ward";
     private static final String TAG_REQUEST = "Want";
     private static final String TAG_META = "m";
     private static final String TAG_NEED = "need";
@@ -132,6 +133,7 @@ public final class CapabilityTomeKnowledge {
             }
 
             root.setInteger(TAG_SLOTS, instance.getUnlockedSlots());
+            root.setInteger(TAG_WARD, instance.getWard());
             NBTTagList want = new NBTTagList();
             for (BountyItem line : instance.getRequest()) {
                 NBTTagCompound tag = new NBTTagCompound();
@@ -197,6 +199,8 @@ public final class CapabilityTomeKnowledge {
             } else {
                 instance.setUnlockedSlots(Math.max(1, instance.count()));
             }
+
+            instance.setWard(root.getInteger(TAG_WARD));
 
             NBTTagList want = root.getTagList(TAG_REQUEST, 10);
             List<BountyItem> request = new ArrayList<BountyItem>();

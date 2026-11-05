@@ -1,5 +1,6 @@
 package com.exiledradio.rlcraftvillagertomes.bounty;
 
+import com.exiledradio.rlcraftvillagertomes.Feedback;
 import com.exiledradio.rlcraftvillagertomes.ModConfig;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
@@ -43,7 +44,7 @@ public final class SlotRequests {
      * How many slots a villager effectively has open.
      *
      * <p>With locking off this is simply the configured maximum, so turning the setting off
-     * restores the old behaviour for every villager at once rather than only for new ones.
+     * restores the old behavior for every villager at once rather than only for new ones.
      *
      * <p>This is also what the chance formulas count as the villager's experience: slots it
      * has opened, not books it holds. Paying for a slot is the investment, so that is what
@@ -148,7 +149,84 @@ public final class SlotRequests {
             }
             break;
         }
+        finishDelivery(player, villager, tomes, taken, false);
+    }
 
+    /**
+     * Whether the lectern's Deliver button may take this stack without asking.
+     *
+     * <p>Bounty matching ignores NBT, so a villager asking for a diamond sword is happy with
+     * an enchanted one - fine when you hand one over yourself, a disaster when a button
+     * sweeps your inventory and finds the sword on your hotbar. Anything enchanted or
+     * renamed is left for you to hand over by hand.
+     */
+    public static boolean isSafeToAutoDeliver(ItemStack stack) {
+        return !stack.isEmpty() && !stack.isItemEnchanted() && !stack.hasDisplayName();
+    }
+
+    /** How many of a line's item the player is carrying that the Deliver button would take. */
+    public static int countDeliverable(EntityPlayer player, BountyItem line) {
+        int count = 0;
+        for (int i = 0; i < player.inventory.getSizeInventory(); i++) {
+            if (isArmorSlot(i)) {
+                continue;
+            }
+            ItemStack stack = player.inventory.getStackInSlot(i);
+            if (isSafeToAutoDeliver(stack) && line.matches(stack)) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Hands over everything the villager still needs that the player is carrying.
+     *
+     * <p>What the ledger lectern's Deliver button does. Armor being worn is never touched,
+     * and neither is anything {@link #isSafeToAutoDeliver} turns down.
+     *
+     * @return how many items were taken in total
+     */
+    public static int deliverFromInventory(EntityPlayer player, EntityVillager villager,
+                                           ITomeKnowledge tomes) {
+        int total = 0;
+        for (BountyItem line : tomes.getRequest()) {
+            for (int i = 0; i < player.inventory.getSizeInventory() && !line.isSatisfied(); i++) {
+                if (isArmorSlot(i)) {
+                    continue;
+                }
+                ItemStack stack = player.inventory.getStackInSlot(i);
+                if (!isSafeToAutoDeliver(stack) || !line.matches(stack)) {
+                    continue;
+                }
+                int taken = line.deliver(stack.getCount());
+                if (taken > 0 && !player.capabilities.isCreativeMode) {
+                    stack.shrink(taken);
+                }
+                total += taken;
+            }
+        }
+        if (total > 0) {
+            player.inventory.markDirty();
+            player.inventoryContainer.detectAndSendChanges();
+        }
+        finishDelivery(player, villager, tomes, total, true);
+        return total;
+    }
+
+    /** {@code InventoryPlayer} lays out main (36), then armor (4), then off hand (1). */
+    private static boolean isArmorSlot(int index) {
+        return index >= 36 && index < 40;
+    }
+
+    /**
+     * Effects, messages and the slot unlock after items were handed over.
+     *
+     * @param remote true when delivered from a lectern - the ledger screen already shows
+     *               the remaining list, so the per-delivery chat listing is skipped
+     */
+    private static void finishDelivery(EntityPlayer player, EntityVillager villager,
+                                       ITomeKnowledge tomes, int taken, boolean remote) {
         if (taken <= 0) {
             return;
         }
@@ -166,34 +244,34 @@ public final class SlotRequests {
                         SoundEvents.BLOCK_ANVIL_USE, SoundCategory.NEUTRAL, 0.8F, 1.4F);
             }
             particles(villager, EnumParticleTypes.ENCHANTMENT_TABLE, 40);
-            player.sendMessage(new TextComponentString(PREFIX + TextFormatting.GREEN
-                    + "Slot unlocked. " + TextFormatting.GRAY + "This villager now has "
-                    + unlockedSlots(tomes) + " slot(s), " + openSlots(tomes) + " free."));
+            String unlocked = "Slot unlocked! " + unlockedSlots(tomes) + " slot"
+                    + (unlockedSlots(tomes) == 1 ? "" : "s") + ", " + openSlots(tomes) + " free";
 
-            if (canUnlockMore(tomes)) {
+            boolean more = canUnlockMore(tomes);
+            if (more) {
                 // Straight on to the next demand rather than making the player click again
-                // to discover there is one. Buying a villager out from one slot to five is
-                // now a single continuous errand, so the list for the next leg belongs in
-                // the same breath as the confirmation for the last.
-                describeRequest(player, villager, tomes);
-                // And the log follows it to the new demand instead of being crossed off,
+                // to discover there is one - the scroll that announces the unlock shows it.
+                ensureRequest(villager, tomes);
+                // And the ledger follows it to the new demand instead of crossing it off,
                 // which it only deserves once there is genuinely nothing left to fetch.
                 QuestBinding.refreshIfLogged(player, villager, tomes);
             } else {
-                player.sendMessage(new TextComponentString(PREFIX + TextFormatting.GRAY
-                        + "That was its last slot - it will not ask for anything again."));
                 QuestBinding.clearIfLogged(player, villager);
+                unlocked = "Slot unlocked - its last one";
+            }
+            if (remote) {
+                Feedback.notify(player, Feedback.GOOD, unlocked);
+            } else {
+                Feedback.scroll(player, villager, tomes, Feedback.GOOD, unlocked);
             }
             return;
         }
 
-        // Keeps a carried log's counts in step without needing to re-name the villager.
+        // Keeps a carried ledger's counts in step.
         QuestBinding.refreshIfLogged(player, villager, tomes);
 
-        if (ModConfig.ANNOUNCE_LEARNED) {
-            player.sendMessage(new TextComponentString(PREFIX + TextFormatting.GREEN
-                    + "Delivered " + taken + "." + TextFormatting.GRAY + " Needed:"));
-            listOutstanding(player, tomes);
+        if (ModConfig.ANNOUNCE_LEARNED && !remote) {
+            Feedback.scroll(player, villager, tomes, Feedback.GOOD, "Delivered " + taken);
         }
     }
 
@@ -206,7 +284,7 @@ public final class SlotRequests {
         return true;
     }
 
-    /** Prints what this villager is asking for, rolling a demand first if it has none. */
+    /** Unrolls this villager's bounty scroll, rolling a demand first if it has none. */
     public static void describeRequest(EntityPlayer player, EntityVillager villager,
                                        ITomeKnowledge tomes) {
         if (!canUnlockMore(tomes)) {
@@ -216,31 +294,7 @@ public final class SlotRequests {
         if (tomes.getRequest().isEmpty()) {
             return;
         }
-        player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
-                + "Needed for slot " + (unlockedSlots(tomes) + 1) + ":"));
-        listOutstanding(player, tomes);
-    }
-
-    /**
-     * One line per item.
-     *
-     * <p>Tried as a single comma-separated line and it was worse - a column of short lines
-     * is far quicker to scan for "have I got enough diamonds yet" than a paragraph that
-     * wraps. Delivered entries go dark grey rather than disappearing, so the list keeps the
-     * same shape as it fills in.
-     */
-    private static void listOutstanding(EntityPlayer player, ITomeKnowledge tomes) {
-        for (BountyItem line : tomes.getRequest()) {
-            Item item = ForgeRegistries.ITEMS.getValue(line.getItemName());
-            String name = item == null
-                    ? String.valueOf(line.getItemName())
-                    : new ItemStack(item, 1, line.getMeta() < 0 ? 0 : line.getMeta())
-                            .getDisplayName();
-            player.sendMessage(new TextComponentString(
-                    (line.isSatisfied() ? TextFormatting.DARK_GRAY : TextFormatting.WHITE)
-                            + "  " + name + " " + line.getDelivered() + "/"
-                            + line.getRequired()));
-        }
+        Feedback.scroll(player, villager, tomes, Feedback.INFO, null);
     }
 
     private static void particles(EntityVillager villager, EnumParticleTypes type, int count) {

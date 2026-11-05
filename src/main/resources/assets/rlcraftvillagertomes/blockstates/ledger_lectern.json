@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "rlcraftvillagertomes:ledger_lectern"
+    },
+    "facing=south": {
+      "model": "rlcraftvillagertomes:ledger_lectern",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "rlcraftvillagertomes:ledger_lectern",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "rlcraftvillagertomes:ledger_lectern",
+      "y": 90
+    }
+  }
+}

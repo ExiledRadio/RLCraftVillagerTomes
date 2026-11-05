@@ -119,4 +119,7 @@ task deployToInstance(type: Copy) {
 }
 
 deployToInstance.dependsOn reobfJar
+// reobfJar rewrites the jar in place, so Gradle can think it is up to date after a
+// runServer/runClient rebuilt the jar with MCP names - and ship a jar that crashes real instances.
+reobfJar.outputs.upToDateWhen { false }
 build.finalizedBy deployToInstance

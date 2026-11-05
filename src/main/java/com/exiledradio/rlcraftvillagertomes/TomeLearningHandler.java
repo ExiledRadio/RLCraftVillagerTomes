@@ -3,10 +3,13 @@ package com.exiledradio.rlcraftvillagertomes;
 import com.exiledradio.rlcraftvillagertomes.capability.CapabilityTomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.ITomeKnowledge;
 import com.exiledradio.rlcraftvillagertomes.capability.Tome;
+import com.exiledradio.rlcraftvillagertomes.bounty.BountyNote;
+import com.exiledradio.rlcraftvillagertomes.ledger.LedgerNetwork;
 import com.exiledradio.rlcraftvillagertomes.bounty.SlotRequests;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystEntry;
 import com.exiledradio.rlcraftvillagertomes.quest.QuestBinding;
 import com.exiledradio.rlcraftvillagertomes.quest.QuestLog;
+import com.exiledradio.rlcraftvillagertomes.ward.WardMode;
 import com.exiledradio.rlcraftvillagertomes.catalyst.CatalystRegistry;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -60,16 +63,31 @@ public final class TomeLearningHandler {
 
     // HIGHEST so a bounty can be handed over with an item the player is not skilled enough to
     // USE. Reskillable (RLCraft's level locks) cancels EntityInteract at HIGH whenever the held
-    // item is locked, and an ordinary-priority handler never sees a cancelled event - so a
+    // item is locked, and an ordinary-priority handler never sees a canceled event - so a
     // villager asking for a diamond shovel could not be given one without Gathering 16.
-    // Reskillable returns early on an event that is already cancelled, so claiming the click
-    // first is enough. Only our own gestures are cancelled here; every other click falls
+    // Reskillable returns early on an event that is already canceled, so claiming the click
+    // first is enough. Only our own gestures are canceled here; every other click falls
     // through untouched and Reskillable still enforces its lock on it.
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (!(event.getTarget() instanceof EntityVillager)) {
+            return;
+        }
         // Every decision is the server's. The client fires this event too, and letting it
         // run there would consume the book twice over in single player.
-        if (event.getWorld().isRemote || !(event.getTarget() instanceof EntityVillager)) {
+        if (event.getWorld().isRemote) {
+            // The one thing the client does: claim the ledger gesture, so it does not fall
+            // through to using the held item. A book and quill would otherwise open its
+            // writing screen over the top of the ledger the server just made, and a ledger
+            // would open itself. The interact packet has already gone by the time this event
+            // fires, so cancelling here costs the server nothing.
+            ItemStack held = event.getItemStack();
+            if (ModConfig.ENABLE_LEARNING && isTeachingClick(event.getEntityPlayer())
+                    && (QuestLog.isLog(held) || QuestLog.isLegacyLog(held)
+                    || QuestLog.isBlank(held))) {
+                event.setCanceled(true);
+                event.setCancellationResult(EnumActionResult.SUCCESS);
+            }
             return;
         }
 
@@ -117,10 +135,12 @@ public final class TomeLearningHandler {
         // villager's outstanding demand still matters, and that is the thing people check
         // constantly while out gathering.
         boolean asking = sneakAction && held.isEmpty();
-        // A book and quill becomes a log; an existing log records the villager it is
-        // clicked at. Checked before the catalyst and bounty branches so neither can claim
-        // the click if somebody ever lists a book in one of those lists.
-        boolean logging = sneakAction && (QuestLog.isLog(held) || QuestLog.isBlank(held));
+        // A book and quill becomes a ledger; a ledger (or a pre-2.2.0 written-book log, which
+        // is converted on the spot) records the villager it is clicked at. Checked before the
+        // catalyst and bounty branches so neither can claim the click if somebody ever lists
+        // a book in one of those lists.
+        boolean logging = sneakAction && (QuestLog.isLog(held) || QuestLog.isLegacyLog(held)
+                || QuestLog.isBlank(held));
 
         if (logging || delivering || banking || asking) {
             event.setCanceled(true);
@@ -132,13 +152,12 @@ public final class TomeLearningHandler {
             if (blocker != null) {
                 refuse(player, villager, held, blocker);
             } else if (logging) {
-                ItemStack log = held;
-                if (QuestLog.isBlank(held)) {
-                    log = QuestBinding.placeNewLog(player, QuestLog.createFrom(held, player));
-                }
+                ItemStack log = QuestLog.isBlank(held)
+                        ? QuestBinding.placeNewLog(player, QuestLog.createFrom(held))
+                        : QuestBinding.findLog(player);
                 if (log.isEmpty()) {
                     refuse(player, villager, held,
-                            "No room to put the log - free up a slot and try again.");
+                            "No room to put the ledger - free up a slot and try again.");
                 } else {
                     QuestBinding.offer(player, villager, log, tomes);
                 }
@@ -256,24 +275,20 @@ public final class TomeLearningHandler {
             return;
         }
         if (verdict == TeachConfirmations.Verdict.ASK) {
-            ITextComponent ask = new TextComponentString(PREFIX + TextFormatting.YELLOW
-                    + "Give ");
+            ITextComponent ask = new TextComponentString("Teach ");
             ask.appendSibling(describe(top.getKey(), top.getValue().intValue()));
             // With the gamble switched off every attempt lands, so quoting odds - or warning
             // that the book can be lost - would describe a mechanic that is not running.
             if (ModConfig.ENABLE_CHANCE) {
                 float odds = ModConfig.getTotalChance(SlotRequests.unlockedSlots(tomes),
                         tomes.getPityBonus(gambledOn), tomes.getBankedChance());
-                ask.appendSibling(new TextComponentString(TextFormatting.YELLOW + " to this villager? "
-                        + TextFormatting.WHITE + percent(odds) + TextFormatting.YELLOW + " chance."));
+                ask.appendSibling(new TextComponentString("? " + percent(odds) + " chance"
+                        + (ModConfig.CONSUME_BOOK_ON_FAILURE ? ", book lost on failure" : "")
+                        + ". Sneak-click again to confirm"));
             } else {
-                ask.appendSibling(new TextComponentString(TextFormatting.YELLOW + " to this villager?"));
+                ask.appendSibling(new TextComponentString("? Sneak-click again to confirm"));
             }
-            player.sendMessage(ask);
-            player.sendMessage(new TextComponentString(TextFormatting.GRAY
-                    + "  Sneak-click again to confirm."
-                    + (ModConfig.ENABLE_CHANCE && ModConfig.CONSUME_BOOK_ON_FAILURE
-                            ? " The book is destroyed if it fails." : "")));
+            Feedback.notify(player, Feedback.WARN, ask);
             return;
         }
 
@@ -330,7 +345,7 @@ public final class TomeLearningHandler {
 
         // Captured before the stack shrinks. Banking the last one in a stack empties it,
         // and an emptied stack renders as "Air" in the message that follows.
-        ITextComponent banked = held.getTextComponent();
+        String banked = held.getDisplayName();
 
         tomes.addBankedChance(entry.getTier().getPercent());
         if (!player.capabilities.isCreativeMode) {
@@ -345,17 +360,10 @@ public final class TomeLearningHandler {
         if (ModConfig.ANNOUNCE_LEARNED) {
             float now = ModConfig.getTotalChance(SlotRequests.unlockedSlots(tomes), 0.0F,
                     tomes.getBankedChance());
-            ITextComponent message = new TextComponentString(PREFIX + TextFormatting.GREEN
-                    + "Banked ");
-            message.appendSibling(banked);
-            message.appendSibling(new TextComponentString(TextFormatting.GREEN + " (+"
-                    + percent(entry.getTier().getPercent()) + "). "
-                    + TextFormatting.GRAY + "Chance now " + percent(now) + "."));
-            player.sendMessage(message);
-            // Repeated under every deposit so the numbers you are aiming at stay in front of
-            // you while you feed a villager, rather than needing an empty-handed click
-            // between each one to check whether you have already overshot.
-            sendBonusLines(player, tomes);
+            // Per-enchantment bonuses are on the bounty scroll; the action bar has room
+            // for the headline only.
+            Feedback.notify(player, Feedback.GOOD, "Banked " + banked + " (+"
+                    + percent(entry.getTier().getPercent()) + ") - chance now " + percent(now));
         }
     }
 
@@ -368,58 +376,17 @@ public final class TomeLearningHandler {
      * only the odds, which meant the only way to see an outstanding demand was to offer a
      * book and be refused.
      */
+    /**
+     * The sneak-click-with-an-empty-hand report: what the villager wants, how many free
+     * slots it has, its chance figures when chance is on, and its ward - all on a bounty
+     * scroll the client unrolls ({@code client.GuiBountyNote}) rather than in chat.
+     */
     private static void reportChance(EntityPlayer player, EntityVillager villager,
                                      ITomeKnowledge tomes) {
-        int open = SlotRequests.openSlots(tomes);
-        String slots = open + " slot" + (open == 1 ? "" : "s") + " free";
-
-        if (ModConfig.ENABLE_CHANCE) {
-            int unlocked = SlotRequests.unlockedSlots(tomes);
-            float total = ModConfig.getTotalChance(unlocked, 0.0F, tomes.getBankedChance());
-            // The ceiling is shown alongside because it moves per villager. Without it there
-            // is no way to tell whether catalysts have stopped helping because you are done
-            // or because this particular librarian cannot be taken any higher yet.
-            player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
-                    + "Success: " + TextFormatting.WHITE + percent(total)
-                    + TextFormatting.GRAY + " of " + percent(ModConfig.getMaxChance(unlocked))
-                    + " max - " + slots));
-            sendBonusLines(player, tomes);
-        } else {
-            player.sendMessage(new TextComponentString(PREFIX + TextFormatting.AQUA
-                    + slots));
-        }
-
-        // Silent only once the villager is at its slot cap. Everywhere below that it owes a
-        // bounty whether or not its existing slots are empty, and this is the click people
-        // use to check what it is.
-        SlotRequests.describeRequest(player, villager, tomes);
-    }
-
-    /**
-     * One line per enchantment this villager owes something on, with the number that
-     * matters: the bonus and what it actually adds up to.
-     *
-     * <p>Pity is per enchantment, so it cannot be folded into the headline figure. Shown as
-     * the bonus rather than a failure count because what a player needs to know is that
-     * Mending reads better here, not the bookkeeping behind it. Iterating what is owed
-     * rather than what is known also catches enchantments failed but never landed, which
-     * have no tome to hang a line off.
-     */
-    private static void sendBonusLines(EntityPlayer player, ITomeKnowledge tomes) {
-        int unlocked = SlotRequests.unlockedSlots(tomes);
-        float banked = tomes.getBankedChance();
-        for (Map.Entry<ResourceLocation, Float> owed : tomes.pityView().entrySet()) {
-            if (owed.getValue().floatValue() <= 0.0F) {
-                continue;
-            }
-            Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(owed.getKey());
-            String name = enchantment == null
-                    ? String.valueOf(owed.getKey()) : plainName(enchantment);
-            player.sendMessage(new TextComponentString(TextFormatting.GRAY + "  " + name
-                    + " +" + percent(owed.getValue().floatValue())
-                    + " | " + TextFormatting.WHITE
-                    + percent(ModConfig.getTotalChance(
-                            unlocked, owed.getValue().floatValue(), banked))));
+        if (player instanceof net.minecraft.entity.player.EntityPlayerMP) {
+            LedgerNetwork.CHANNEL.sendTo(new LedgerNetwork.NoteMessage(
+                    BountyNote.of(villager, tomes).toTag()),
+                    (net.minecraft.entity.player.EntityPlayerMP) player);
         }
     }
 
@@ -481,10 +448,8 @@ public final class TomeLearningHandler {
         if (ModConfig.ANNOUNCE_REJECTED) {
             float next = ModConfig.getTotalChance(
                     SlotRequests.unlockedSlots(tomes), tomes.getPityBonus(gambledOn), tomes.getBankedChance());
-            player.sendMessage(new TextComponentString(PREFIX + TextFormatting.RED
-                    + "The binding failed at " + percent(chance) + "."
-                    + TextFormatting.GRAY + " Next attempt at that enchantment here: "
-                    + percent(next) + "."));
+            Feedback.notify(player, Feedback.BAD, "The binding failed at " + percent(chance)
+                    + " - next try at that enchantment here: " + percent(next));
         }
     }
 
@@ -502,8 +467,8 @@ public final class TomeLearningHandler {
     }
 
     /**
-     * Two jobs, in order: swallow the follow-up to a click we already answered, then handle a
-     * sneak-click that was not aimed at a villager at all.
+     * Swallows the follow-up to a click we already answered. Without this, writing a villager
+     * into a ledger would also open the ledger a moment later.
      *
      * <p>Cancelling the entity interaction is not enough on its own. The client's
      * {@code rightClickMouse} tries the entity first and, seeing no success come back from
@@ -511,14 +476,11 @@ public final class TomeLearningHandler {
      * opened its writing screen a moment after the villager had already dealt with it, and
      * the log only appeared once that screen was closed. The claim is keyed on the tick
      * rather than on the item so it covers anything else that might gain a right-click
-     * behaviour later, and scoped to a single tick so it can never swallow a genuine,
+     * behavior later, and scoped to a single tick so it can never swallow a genuine,
      * separate click.
      *
-     * <p>What is left after that is a sneak-click on nothing, which is where the quest log
-     * roster lives.
-     *
      * <p>HIGHEST for the same reason as {@link #onEntityInteract}: the follow-up use of a
-     * skill-locked item is cancelled by Reskillable at HIGH, which would print its "you
+     * skill-locked item is canceled by Reskillable at HIGH, which would print its "you
      * cannot use this" line straight after the villager accepted the item.
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -532,29 +494,6 @@ public final class TomeLearningHandler {
                     && event.getWorld().getTotalWorldTime() - claimed.longValue() <= 1L) {
                 event.setCanceled(true);
                 return;
-            }
-        }
-
-        // Sneak-clicking nothing in particular with the log lists it in chat instead of
-        // opening it. Reading the book is still a plain right-click, so nothing is lost.
-        //
-        // Cancelled on BOTH sides, and this is the only handler here that is. The client runs
-        // useItemRightClick against its own copy of the world, and ItemWrittenBook opens the
-        // screen from there - so a server-only cancel stops nothing the player can see. The
-        // listing itself stays server-side: PlayerControllerMP sends its packet before the
-        // event is fired, so the server hears about the click either way, and printing on
-        // both sides would print everything twice.
-        //
-        // On a vanilla client the screen still opens, since there is no handler there to
-        // cancel. The list is waiting in chat behind it, which is the right way for this to
-        // degrade on the unmodded clients the rest of the mod is built to support.
-        if (player.isSneaking() && QuestLog.isLog(event.getItemStack())) {
-            event.setCanceled(true);
-            if (server) {
-                QuestBinding.listEntries(player, event.getItemStack());
-                // Stops the offhand's click listing it a second time when both hands
-                // somehow hold a log.
-                claimClick(player);
             }
         }
     }
@@ -732,6 +671,10 @@ public final class TomeLearningHandler {
         // live count instead would print the same final total on every line of a
         // multi-enchantment book, since all of them are applied before any message is sent.
         int slotsUsed = plan.slotsUsedBefore;
+        // Everything goes into one line: the action bar shows one message at a time, so a
+        // multi-enchantment book sent as several would only leave the last one readable.
+        ITextComponent summary = new TextComponentString("");
+        boolean any = false;
 
         // The counter advances whether or not the matching message is switched on, so
         // turning ANNOUNCE_LEARNED off cannot leave the upgrade lines reporting stale
@@ -741,13 +684,9 @@ public final class TomeLearningHandler {
             if (!ModConfig.ANNOUNCE_LEARNED) {
                 continue;
             }
-            ITextComponent message = new TextComponentString(PREFIX + TextFormatting.GREEN
-                    + "Learned ");
-            message.appendSibling(describe(entry.getKey(), entry.getValue().intValue()));
-            message.appendSibling(new TextComponentString(TextFormatting.GREEN + ". "
-                    + TextFormatting.GRAY + slotsUsed + "/"
-                    + ModConfig.MAX_TOMES_PER_VILLAGER + " slots used."));
-            player.sendMessage(message);
+            summary.appendSibling(new TextComponentString(any ? ", learned " : "Learned "));
+            summary.appendSibling(describe(entry.getKey(), entry.getValue().intValue()));
+            any = true;
         }
 
         for (Upgrade upgrade : plan.upgraded) {
@@ -757,26 +696,28 @@ public final class TomeLearningHandler {
             if (!ModConfig.ANNOUNCE_UPGRADED) {
                 continue;
             }
-            ITextComponent message = new TextComponentString(PREFIX + TextFormatting.AQUA
-                    + (upgrade.keptOld ? "Added " : "Upgraded "));
+            String lead = upgrade.keptOld ? "added " : "upgraded ";
+            summary.appendSibling(new TextComponentString(any ? ", " + lead
+                    : Character.toUpperCase(lead.charAt(0)) + lead.substring(1)));
             if (upgrade.keptOld) {
                 // The old trade is still on the board, so saying "upgraded X to Y" would be a
                 // lie - it now sells both, and the slot cost is the whole point of the
                 // setting, so it gets said out loud.
-                message.appendSibling(describe(upgrade.enchantment, upgrade.to));
-                message.appendSibling(new TextComponentString(TextFormatting.AQUA
-                        + " alongside "));
-                message.appendSibling(describe(upgrade.enchantment, upgrade.from));
-                message.appendSibling(new TextComponentString(TextFormatting.AQUA + ". "
-                        + TextFormatting.GRAY + slotsUsed + "/"
-                        + ModConfig.MAX_TOMES_PER_VILLAGER + " slots used."));
+                summary.appendSibling(describe(upgrade.enchantment, upgrade.to));
+                summary.appendSibling(new TextComponentString(" alongside "));
+                summary.appendSibling(describe(upgrade.enchantment, upgrade.from));
             } else {
-                message.appendSibling(describe(upgrade.enchantment, upgrade.from));
-                message.appendSibling(new TextComponentString(TextFormatting.AQUA + " to "));
-                message.appendSibling(describe(upgrade.enchantment, upgrade.to));
-                message.appendSibling(new TextComponentString(TextFormatting.AQUA + "."));
+                summary.appendSibling(describe(upgrade.enchantment, upgrade.from));
+                summary.appendSibling(new TextComponentString(" to "));
+                summary.appendSibling(describe(upgrade.enchantment, upgrade.to));
             }
-            player.sendMessage(message);
+            any = true;
+        }
+
+        if (any) {
+            summary.appendSibling(new TextComponentString(" - " + slotsUsed + "/"
+                    + ModConfig.MAX_TOMES_PER_VILLAGER + " slots used"));
+            Feedback.notify(player, Feedback.GOOD, summary);
         }
     }
 
@@ -793,7 +734,7 @@ public final class TomeLearningHandler {
         }
         spawnParticles(villager, EnumParticleTypes.VILLAGER_ANGRY);
         if (ModConfig.ANNOUNCE_REJECTED) {
-            player.sendMessage(new TextComponentString(PREFIX + TextFormatting.YELLOW + reason));
+            Feedback.notify(player, Feedback.WARN, reason);
         }
     }
 

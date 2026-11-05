@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SSS",
+    " L ",
+    " S "
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:wooden_slab",
+      "data": 1
+    },
+    "L": {
+      "item": "rlcraftvillagertomes:ledger"
+    }
+  },
+  "result": {
+    "item": "rlcraftvillagertomes:ledger_lectern",
+    "count": 1
+  }
+}

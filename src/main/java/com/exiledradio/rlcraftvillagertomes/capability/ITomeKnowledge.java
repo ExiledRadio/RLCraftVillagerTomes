@@ -124,6 +124,15 @@ public interface ITomeKnowledge {
      */
     int getUnlockedSlots();
 
+    /**
+     * The Villager Ward on this villager, as a {@code WardMode} ordinal - 0 for none.
+     * Kept here rather than in its own capability so it saves, loads and survives a cure
+     * together with everything else the mod knows about the villager.
+     */
+    int getWard();
+
+    void setWard(int ward);
+
     /** Opens another slot. */
     void unlockSlot();
 

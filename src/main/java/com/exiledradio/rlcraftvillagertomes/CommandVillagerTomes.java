@@ -64,7 +64,7 @@ public class CommandVillagerTomes extends CommandBase {
 
     @Override
     public String getUsage(ICommandSender sender) {
-        return "/villagertomes <list|tiers|name|log|unlock|bank|pity|reroll|teach|forget|clear> [args]";
+        return "/villagertomes <list|tiers|log|unlock|bank|pity|reroll|teach|forget|clear> [args]";
     }
 
     /** Zero so that unprivileged players can reach {@code list}. See {@link #checkAdmin}. */
@@ -90,10 +90,6 @@ public class CommandVillagerTomes extends CommandBase {
             executeList(sender);
         } else if ("tiers".equals(subCommand)) {
             executeTiers(sender);
-        } else if ("name".equals(subCommand)) {
-            executeName(sender, args);
-        } else if ("cancel".equals(subCommand)) {
-            executeCancel(sender);
         } else if ("log".equals(subCommand)) {
             executeLog(sender);
         } else if ("unlog".equals(subCommand)) {
@@ -226,71 +222,28 @@ public class CommandVillagerTomes extends CommandBase {
         }
     }
 
-    /**
-     * Finishes naming a villager for the quest log.
-     *
-     * <p>Reached by clicking the chat button, which pre-fills this command rather than
-     * running it - the player types the name themselves and presses enter, and that is the
-     * confirm. Open to everyone: it only names a villager you are already standing next to.
-     *
-     * <p>The rest of the line is taken verbatim so names can contain spaces.
-     */
-    private void executeName(ICommandSender sender, String[] args) throws CommandException {
-        if (!(sender instanceof EntityPlayer)) {
-            throw new CommandException("Only a player can name a villager.");
-        }
-        if (args.length < 2) {
-            throw new WrongUsageException("/villagertomes name <name>");
-        }
-        StringBuilder name = new StringBuilder();
-        for (int i = 1; i < args.length; i++) {
-            if (i > 1) {
-                name.append(' ');
-            }
-            name.append(args[i]);
-        }
-
-        String problem = QuestBinding.completeNaming((EntityPlayer) sender, name.toString());
-        if (problem != null) {
-            reply(sender, TextFormatting.YELLOW + problem);
-        }
-    }
-
-    /** Backs the [Remove] button on a log entry. Takes the villager id the button embeds. */
-    /**
-     * The same roster the sneak-click gives, for anyone whose client opens the book anyway.
-     *
-     * <p>The gesture cancels the screen client-side, which only works on a client that has
-     * the mod. This is the path that always works.
-     */
+    /** Lists the carried ledger in chat, with a remove button per villager. */
     private void executeLog(ICommandSender sender) throws CommandException {
         if (!(sender instanceof EntityPlayer)) {
-            throw new CommandException("Only a player carries a quest log.");
+            throw new CommandException("Only a player carries a ledger.");
         }
         EntityPlayer player = (EntityPlayer) sender;
         ItemStack log = QuestBinding.findLog(player);
         if (log.isEmpty()) {
-            throw new CommandException("You are not carrying a quest log.");
+            throw new CommandException("You are not carrying a ledger.");
         }
         QuestBinding.listEntries(player, log);
     }
 
     private void executeUnlog(ICommandSender sender, String[] args) throws CommandException {
         if (!(sender instanceof EntityPlayer)) {
-            throw new CommandException("Only a player carries a quest log.");
+            throw new CommandException("Only a player carries a ledger.");
         }
         if (args.length < 2) {
             throw new WrongUsageException("/villagertomes unlog <villager id>");
         }
         reply(sender, TextFormatting.GRAY
                 + QuestBinding.unlog((EntityPlayer) sender, args[1]));
-    }
-
-    private void executeCancel(ICommandSender sender) throws CommandException {
-        if (!(sender instanceof EntityPlayer)) {
-            throw new CommandException("Only a player has anything to cancel.");
-        }
-        reply(sender, TextFormatting.GRAY + QuestBinding.cancel((EntityPlayer) sender));
     }
 
     /**
@@ -421,7 +374,7 @@ public class CommandVillagerTomes extends CommandBase {
 
         // Deliberately bypasses the whitelist, blacklist and level ceiling - an admin
         // command that silently refused to do what it was told would be worse than useless
-        // for fixing a villager. The tome cap is still honoured, because going over it
+        // for fixing a villager. The tome cap is still honored, because going over it
         // produces a villager the mod cannot describe to the player.
         if (!tomes.knows(id) && tomes.count() >= ModConfig.MAX_TOMES_PER_VILLAGER) {
             throw new CommandException("This villager is already at the tome cap of %s.",
@@ -549,7 +502,7 @@ public class CommandVillagerTomes extends CommandBase {
     public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender,
                                           String[] args, net.minecraft.util.math.BlockPos pos) {
         if (args.length == 1) {
-            return getListOfStringsMatchingLastWord(args, "list", "tiers", "name", "cancel", "log",
+            return getListOfStringsMatchingLastWord(args, "list", "tiers", "log",
                     "unlock", "bank", "pity", "reroll", "teach", "forget", "clear");
         }
         if (args.length == 2 && ("teach".equals(args[0]) || "forget".equals(args[0])

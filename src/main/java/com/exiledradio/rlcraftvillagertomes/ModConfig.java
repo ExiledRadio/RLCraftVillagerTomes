@@ -43,7 +43,7 @@ public class ModConfig {
     public static final String CATEGORY_UPGRADING = "upgrading";
     /** What the resulting trade costs and how often it can be used. */
     public static final String CATEGORY_PRICING = "pricing";
-    /** Chat, sound and particle feedback. */
+    /** Message, sound and particle feedback. Messages show on the action bar or scroll. */
     public static final String CATEGORY_FEEDBACK = "feedback";
     /** Items that improve a teaching attempt, and what each is worth. */
     public static final String CATEGORY_CATALYSTS = "catalysts";
@@ -191,10 +191,11 @@ public class ModConfig {
             "4=25,50,25",
             "5=15,45,40",
     };
-    public static int QUEST_LOG_CAPACITY = 10;
+    /** 0 = no limit beyond {@code QuestLog.HARD_CAP}. */
+    public static int QUEST_LOG_CAPACITY = 0;
 
     // chance
-    public static boolean ENABLE_CHANCE = true;
+    public static boolean ENABLE_CHANCE = false;
     public static float BASE_SUCCESS_CHANCE = 30.0F;
     public static float CHANCE_PER_SLOT = 10.0F;
     public static float MAX_SUCCESS_CHANCE = 75.0F;
@@ -209,25 +210,30 @@ public class ModConfig {
     public static boolean CONSUME_CATALYSTS_ON_FAILURE = true;
 
     // catalysts
-    // Only common, rare and mythic are used out of the box - they are the three rungs of the
-    // Trinkets and Baubles glowing ladder, priced from what each costs to craft: an ingot is
-    // four powder, and a gem is four ingots plus four powder plus a diamond block.
+    // Only used when ENABLE_CHANCE is on. Ordered by how hard each item is to come by: the
+    // everyday ingots at the bottom, emerald and diamond above them, then the Trinkets and
+    // Baubles glowing ladder priced from what each costs to craft - an ingot is four powder,
+    // so 4 x 10, and a gem (four ingots, four powder and a diamond block) is worth more than
+    // any villager's ceiling, so one fills it.
     //
-    // The other three are deliberately defined but empty. A band with nothing in it costs
-    // nothing, and leaving the ladder complete means a pack author adding their own catalysts
-    // has somewhere to put them without first working out what the gaps between 4, 20 and 120
-    // ought to be.
+    // Legendary is defined but empty, so a pack author adding their own catalysts has a rung
+    // between epic and mythic without working out what it ought to be worth.
     public static String[] CATALYST_TIERS = {
-            "common=4.0",
+            "common=5.0",
             "uncommon=10.0",
-            "rare=20.0",
+            "rare=15.0",
             "epic=40.0",
             "legendary=60.0",
             "mythic=120.0",
     };
     public static String[] CATALYST_ITEMS = {
-            "xat:glowing_powder=common",
-            "xat:glowing_ingot=rare",
+            "minecraft:iron_ingot=common",
+            "minecraft:gold_ingot=common",
+            "iceandfire:silver_ingot=common",
+            "minecraft:emerald=uncommon",
+            "xat:glowing_powder=uncommon",
+            "minecraft:diamond=rare",
+            "xat:glowing_ingot=epic",
             "xat:glowing_gem=mythic",
     };
 
@@ -474,21 +480,10 @@ public class ModConfig {
             "charm:charged_emerald=high",
             "iceandfire:silver_block=high",
             "lycanitesmobs:battle_burrito=high,1-1",
-            "iceandfire:dragonscales_red=high,2-6",
-            "iceandfire:dragonscales_green=high,2-6",
-            "iceandfire:dragonscales_bronze=high,2-6",
-            "iceandfire:dragonscales_gray=high,2-6",
-            "iceandfire:dragonscales_blue=high,2-6",
-            "iceandfire:dragonscales_white=high,2-6",
-            "iceandfire:dragonscales_sapphire=high,2-6",
-            "iceandfire:dragonscales_silver=high,2-6",
-            "iceandfire:sea_serpent_scales_blue=high,2-6",
-            "iceandfire:sea_serpent_scales_bronze=high,2-6",
-            "iceandfire:sea_serpent_scales_deepblue=high,2-6",
-            "iceandfire:sea_serpent_scales_green=high,2-6",
-            "iceandfire:sea_serpent_scales_purple=high,2-6",
-            "iceandfire:sea_serpent_scales_red=high,2-6",
-            "iceandfire:sea_serpent_scales_teal=high,2-6",
+            // One line per family: every color shares the name "Dragon Scales", so
+            // asking for a single color could not be read in chat.
+            "iceandfire:dragonscales_*=high,2-6",
+            "iceandfire:sea_serpent_scales_*=high,2-6",
             "defiledlands:black_heart=high,1-1",
             "defiledlands:essence_mourner=high,1-1",
             "defiledlands:essence_destroyer=high,1-1",
@@ -608,8 +603,8 @@ public class ModConfig {
     /**
      * Folds the old ENABLE_UPGRADING / HIGHER_LEVEL_REPLACES pair into UPGRADE_MODE.
      *
-     * <p>The two booleans expressed exactly the four behaviours the mode now names, so this
-     * is lossless - it is a rename, not a behaviour change, and somebody who had deliberately
+     * <p>The two booleans expressed exactly the four behaviors the mode now names, so this
+     * is lossless - it is a rename, not a behavior change, and somebody who had deliberately
      * turned upgrading off keeps it off rather than silently picking up the new default.
      *
      * <pre>
@@ -728,7 +723,7 @@ public class ModConfig {
                         + "\n"
                         + "This is what stops a single villager becoming the entire enchanting\n"
                         + "system. At the default of 5 you end up with a shelf of specialists - the\n"
-                        + "armour one, the tool one - and losing one to a zombie actually costs you\n"
+                        + "armor one, the tool one - and losing one to a zombie actually costs you\n"
                         + "something.\n"
                         + "\n"
                         + "Counts TRADES. With UPGRADE_TAKES_NEW_SLOT off, which is the default, that\n"
@@ -901,7 +896,7 @@ public class ModConfig {
                         + "                  villager with a free slot.\n"
                         + "\n"
                         + "Replaces the old ENABLE_UPGRADING and HIGHER_LEVEL_REPLACES pair, which\n"
-                        + "expressed these same four behaviours but gave no clue which combination\n"
+                        + "expressed these same four behaviors but gave no clue which combination\n"
                         + "produced which. An existing config is carried over automatically.",
                 UPGRADE_MODE_VALUES
         );
@@ -1070,15 +1065,16 @@ public class ModConfig {
                         + "16 (default) is roughly double a vanilla trade, because a trade you had to\n"
                         + "find a book for should not run dry after seven purchases.\n"
                         + "\n"
-                        + "IGNORED while NEVER_LOCK_TAUGHT_TRADES is on, which it is by default. Turn\n"
-                        + "that off if you want this number to mean anything."
+                        + "Ignored while NEVER_LOCK_TAUGHT_TRADES is on."
         );
 
         NEVER_LOCK_TAUGHT_TRADES = config.getBoolean(
-                "NEVER_LOCK_TAUGHT_TRADES", CATEGORY_PRICING, true,
-                "If true (default), trades this mod taught can be used forever and never lock.\n"
+                "NEVER_LOCK_TAUGHT_TRADES", CATEGORY_PRICING, false,
+                "If true, trades this mod taught can be used forever and never lock.\n"
+                        + "False (default) treats them like any other trade: they lock after\n"
+                        + "MAX_TRADE_USES and come back when the villager restocks.\n"
                         + "\n"
-                        + "This exists because of a genuine 1.12 design problem. A villager only\n"
+                        + "Why you might want it on: a 1.12 villager only\n"
                         + "restocks as a side effect of being traded with - EntityVillager.useRecipe\n"
                         + "is the only place that schedules a refresh. So once every trade on a\n"
                         + "villager is exhausted there is no trade left to use, nothing can schedule\n"
@@ -1086,8 +1082,8 @@ public class ModConfig {
                         + "this with workstations and twice-daily restocking; 1.12 never did.\n"
                         + "\n"
                         + "Rather than reimplement restocking, this keeps the trade's use limit ahead\n"
-                        + "of its use count so the lock is never reached. You found the book - having\n"
-                        + "the trade expire was never the interesting part.\n"
+                        + "of its use count so the lock is never reached. VillagerBackport adds 1.14\n"
+                        + "restocking, which makes this unnecessary.\n"
                         + "\n"
                         + "Only affects trades this mod added. See NEVER_LOCK_ANY_TRADE for the rest."
         );
@@ -1180,14 +1176,16 @@ public class ModConfig {
                     + "it more likely, and no amount of tuning could make late slots harder.";
 
     private static final String QUEST_LOG_CAPACITY_COMMENT =
-            "How many villagers one quest log can track.\n"
+            "How many villagers one Villager Ledger can track.\n"
                     + "\n"
-                    + "A quest log is a book and quill you sneak-click a villager with: it\n"
-                    + "becomes a written book listing what that villager wants and where it\n"
-                    + "lives, and entries cross themselves off once the slot is paid for.\n"
+                    + "Sneak-click a villager with a book and quill to make a ledger, and with\n"
+                    + "the ledger to write that villager down. It shows what each one wants and\n"
+                    + "where it lives, and drops villagers that have nothing left to sell. On a\n"
+                    + "Ledger Lectern it can deliver to any logged villager that is loaded.\n"
                     + "\n"
-                    + "One villager per page, so this is also the page count. Vanilla books\n"
-                    + "hold 50 pages, which is the ceiling here.";
+                    + "0 (default) means no limit. Entries live in the world save, not on the\n"
+                    + "item, so a long ledger costs nothing until it is opened. 1000 is a hard\n"
+                    + "ceiling either way: opening the ledger sends the whole list in one packet.";
 
     private static void loadSlots() {
         config.setCategoryComment(CATEGORY_SLOTS, SLOTS_COMMENT);
@@ -1214,7 +1212,7 @@ public class ModConfig {
         parseTierWeights();
 
         QUEST_LOG_CAPACITY = config.getInt(
-                "QUEST_LOG_CAPACITY", CATEGORY_SLOTS, 10, 1, 50,
+                "QUEST_LOG_CAPACITY", CATEGORY_SLOTS, 0, 0, 1000,
                 QUEST_LOG_CAPACITY_COMMENT);
     }
 
@@ -1265,18 +1263,20 @@ public class ModConfig {
                         + "raises the floor for that enchantment on that villager - so a bad run is\n"
                         + "expensive but never endless.\n"
                         + "\n"
-                        + "The whole system is one switch away from the old guaranteed behaviour.\n"
+                        + "The whole system is one switch away from the old guaranteed behavior.\n"
                         + "See ENABLE_CHANCE.");
         config.setCategoryPropertyOrder(CATEGORY_CHANCE, mutableOrder(ORDER_CHANCE));
 
         ENABLE_CHANCE = config.getBoolean(
-                "ENABLE_CHANCE", CATEGORY_CHANCE, true,
-                "If true (default), teaching a book is a roll that can fail.\n"
+                "ENABLE_CHANCE", CATEGORY_CHANCE, false,
+                "If true, teaching a book is a roll that can fail. Off by default.\n"
                         + "\n"
-                        + "Set to false and every book is accepted outright, exactly as it worked\n"
-                        + "before this system existed. Catalysts are then never asked for and never\n"
-                        + "consumed. This is the switch to reach for if you want the mod's original\n"
-                        + "no-gambling behaviour back without reinstalling an old version."
+                        + "Off, every book is accepted outright: the slot bounty is the price of\n"
+                        + "teaching a villager, and catalysts are never asked for or consumed.\n"
+                        + "\n"
+                        + "On, each attempt rolls against the villager's odds. Bank catalysts to\n"
+                        + "raise them, and a failure destroys the book and the catalysts - see the\n"
+                        + "rest of this section for the numbers."
         );
 
         BASE_SUCCESS_CHANCE = config.getFloat(
@@ -1440,6 +1440,11 @@ public class ModConfig {
                     + "Metadata is optional: minecraft:coal:0 is coal but not charcoal. NBT is\n"
                     + "ignored, so an enchanted or renamed copy of a material still counts.\n"
                     + "\n"
+                    + "A * in the item name takes any item it matches, for families that share a\n"
+                    + "name: iceandfire:dragonscales_* asks for Dragon Scales and accepts every\n"
+                    + "color. The wildcard only covers the item name, never the mod id. A villager\n"
+                    + "already asking for one member of a family accepts the whole family too.\n"
+                    + "\n"
                     + "Items no loaded mod registers are never asked for. That check matters more\n"
                     + "here than for catalysts: a request is never re-rolled, so demanding something\n"
                     + "this instance does not have would strand the villager permanently.";
@@ -1483,7 +1488,7 @@ public class ModConfig {
                         + "  percent  percentage points one of these adds to a teaching attempt.\n"
                         + "  min-max  how many a villager asks for when it wants one of these.\n"
                         + "\n"
-                        + "So common=4.0,8-24 means a common item is worth +4% and gets asked for in\n"
+                        + "So common=5.0,8-24 means a common item is worth +5% and gets asked for in\n"
                         + "batches of 8 to 24 - the emerald x18 end of a request. legendary=60.0,1-2\n"
                         + "is the single-item end.\n"
                         + "\n"
@@ -1496,14 +1501,15 @@ public class ModConfig {
                 "Which items belong to which tier, one per line, as modid:item=tier\n"
                         + "\n"
                         + "Metadata is optional: minecraft:dye:4=rare picks out lapis specifically,\n"
-                        + "while minecraft:dye=common covers every colour. An exact metadata match\n"
+                        + "while minecraft:dye=common covers every color. An exact metadata match\n"
                         + "beats an any-metadata one, so you can tier a whole item and then single\n"
                         + "out one variant as worth more.\n"
                         + "\n"
                         + "NBT is ignored, so an enchanted or renamed copy of a material still counts.\n"
                         + "\n"
-                        + "The defaults are the Trinkets and Baubles crafting ladder, whose own\n"
-                        + "tooltips call them Tier 1, 2 and 3. Items no loaded mod registers are\n"
+                        + "The defaults run from everyday ingots (iron, gold, silver) through\n"
+                        + "emerald and diamond to the Trinkets and Baubles glowing ladder, whose\n"
+                        + "own tooltips call them Tier 1, 2 and 3. Items no loaded mod registers are\n"
                         + "skipped with one summary line in the log, so a list written for a full pack\n"
                         + "is safe to carry to a smaller one."
         );
@@ -1518,19 +1524,19 @@ public class ModConfig {
 
         ANNOUNCE_LEARNED = config.getBoolean(
                 "ANNOUNCE_LEARNED", CATEGORY_FEEDBACK, true,
-                "If true (default), say in chat what the villager learned and how many slots it\n"
+                "If true (default), say what the villager learned and how many slots it\n"
                         + "has left."
         );
 
         ANNOUNCE_UPGRADED = config.getBoolean(
                 "ANNOUNCE_UPGRADED", CATEGORY_FEEDBACK, true,
-                "If true (default), say in chat when a trade levels up, and what it went from\n"
+                "If true (default), say when a trade levels up, and what it went from\n"
                         + "and to."
         );
 
         ANNOUNCE_REJECTED = config.getBoolean(
                 "ANNOUNCE_REJECTED", CATEGORY_FEEDBACK, true,
-                "If true (default), explain in chat why a book was handed back - out of slots,\n"
+                "If true (default), explain why a book was handed back - out of slots,\n"
                         + "blacklisted, already at a higher level, and so on.\n"
                         + "Worth keeping on: without it a refused book looks like the mod is broken."
         );

@@ -1,0 +1,7 @@
+item.rlcraftvillagertomes.ledger.name=Villager Ledger
+tile.rlcraftvillagertomes.ledger_lectern.name=Ledger Lectern
+subtitles.rlcraftvillagertomes.ledger.open=Ledger flips open
+subtitles.rlcraftvillagertomes.ledger_lectern.put=Ledger placed
+item.rlcraftvillagertomes.villager_ward.name=Villager Ward
+subtitles.rlcraftvillagertomes.bounty_scroll.open=Scroll unrolls
+subtitles.rlcraftvillagertomes.bounty_scroll.close=Scroll rolls up

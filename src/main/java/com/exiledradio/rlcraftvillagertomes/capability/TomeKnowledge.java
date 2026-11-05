@@ -173,6 +173,17 @@ public class TomeKnowledge implements ITomeKnowledge {
     // ------------------------------------------------------------------- slots
 
     private int unlockedSlots;
+    private int ward;
+
+    @Override
+    public int getWard() {
+        return ward;
+    }
+
+    @Override
+    public void setWard(int ward) {
+        this.ward = ward;
+    }
 
     private final List<BountyItem> request = new ArrayList<BountyItem>();
 

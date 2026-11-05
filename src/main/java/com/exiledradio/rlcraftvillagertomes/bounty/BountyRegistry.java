@@ -152,6 +152,10 @@ public final class BountyRegistry {
             warnLine("item", line, "expected modid:item or modid:item:meta");
             return;
         }
+        if (pieces[0].indexOf('*') >= 0) {
+            warnLine("item", line, "a wildcard can only stand in the item name, not the mod id");
+            return;
+        }
 
         entries.add(new BountyEntry(new ResourceLocation(spec), meta, tier, min, max));
     }
@@ -172,7 +176,7 @@ public final class BountyRegistry {
         resolved = true;
 
         for (BountyEntry entry : entries) {
-            Item item = ForgeRegistries.ITEMS.getValue(entry.getItemName());
+            Item item = ItemPattern.representative(entry.getItemName());
             if (item == null) {
                 unresolved.add(entry.describe());
             }

@@ -64,7 +64,38 @@ def main():
         out.append("</section>")
         sections.append("".join(out))
 
+    cat_tiers = []
+    for line in string_array(src, "CATALYST_TIERS"):
+        name, value = line.split("=")
+        cat_tiers.append((name, float(value.split(",")[0])))
+    cat_items = {}
+    for line in string_array(src, "CATALYST_ITEMS"):
+        spec, tier = line.split("=")
+        cat_items.setdefault(tier, []).append(spec)
+    top = max(v for _, v in cat_tiers) or 1.0
+    rows = []
+    for name, value in cat_tiers:
+        members = cat_items.get(name)
+        cell = (" ".join("<code>%s</code>" % html.escape(m) for m in members)
+                if members else '<span class="none">&mdash;</span>')
+        shown = ("%g" % value) + "%"
+        rows.append('<tr><th scope="row"><code>%s</code></th><td class="num">%s</td>'
+                    '<td class="barcell"><span class="bar" style="width:%.1f%%"></span></td>'
+                    '<td class="members">%s</td></tr>' % (name, shown, value * 100.0 / top, cell))
+    catalyst_body = "<tbody>" + "\n".join(rows) + "</tbody>"
+
     page = open(PAGE, encoding="utf-8").read()
+    head = page.index("<h2>Catalysts")
+    body_start = page.index("<tbody>", head)
+    body_end = page.index("</tbody>", body_start) + len("</tbody>")
+    page = page[:body_start] + catalyst_body + page[body_end:]
+    page = re.sub(r'<p class="note">Catalysts are banked into a villager.*?</p>',
+                  '<p class="note">Catalysts only matter with the optional chance system on '
+                  '(<code>ENABLE_CHANCE</code>, off by default). They are banked into a villager '
+                  'before a book is offered, and are used up whether the attempt succeeds or '
+                  'fails. Bands with no items are still defined and available &mdash;\n'
+                  'nothing is hard-coded, so anything from any mod can be assigned to one.</p>',
+                  page, count=1, flags=re.S)
     page = re.sub(r'<section class="band t-low">.*<section class="band t-high">.*?</section>',
                   lambda m: "\n".join(sections), page, count=1, flags=re.S)
     total = len(items)
